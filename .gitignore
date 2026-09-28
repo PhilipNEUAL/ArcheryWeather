@@ -1,0 +1,5 @@
+.vscode/
+WeatherConfig.local.php
+PublishConfig.local.php
+
+*.log

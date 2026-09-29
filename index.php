@@ -233,11 +233,20 @@ include('Common/Templates/head.php');
 // Weather session reading test
     $weatherSessions =
         resultspack_weather_get_sessions();
+    $completedWeatherSessions =
+        resultspack_weather_get_completed_sessions();
 
     echo '<br>';
 
     echo '<table class="Tabella freeWidth">';
     echo '<tr><th class="Main" colspan="4">Weather sessions test</th></tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Completed sessions</td>';
+    echo '<td colspan="3">'
+        . count($completedWeatherSessions)
+        . '</td>';
+    echo '</tr>';
 
     echo '<tr>';
     echo '<th class="Title">Session</th>';
@@ -295,5 +304,7 @@ include('Common/Templates/head.php');
     }
 
     echo '</table>';
+
+
 
     include('Common/Templates/tail.php');

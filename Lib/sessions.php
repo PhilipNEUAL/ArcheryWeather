@@ -127,3 +127,47 @@ function resultspack_weather_get_sessions()
 
     return $sessions;
 }
+
+// Find one weather session by ID.
+function resultspack_weather_get_session($sessionId)
+{
+    $sessionId = (int) $sessionId;
+
+    if ($sessionId <= 0) {
+        return null;
+    }
+
+    foreach (resultspack_weather_get_sessions() as $session) {
+        if ((int) $session['id'] === $sessionId) {
+            return $session;
+        }
+    }
+
+    return null;
+}
+
+// Return completed weather sessions, newest first.
+function resultspack_weather_get_completed_sessions()
+{
+    $completed = array();
+
+    foreach (resultspack_weather_get_sessions() as $session) {
+        if ($session['ended_epoch'] !== null) {
+            $completed[] = $session;
+        }
+    }
+
+    return $completed;
+}
+
+// Find one completed weather session by ID.
+function resultspack_weather_get_completed_session($sessionId)
+{
+    $session = resultspack_weather_get_session($sessionId);
+
+    if (!$session || $session['ended_epoch'] === null) {
+        return null;
+    }
+
+    return $session;
+}

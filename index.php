@@ -3,6 +3,7 @@
 require_once(__DIR__ . '/Lib/bootstrap.php');
 require_once(__DIR__ . '/Lib/config.php');
 require_once(__DIR__ . '/Lib/helpers.php');
+require_once(__DIR__ . '/Lib/tempest.php');
 
 $PAGE_TITLE = 'Archery Weather';
 
@@ -135,6 +136,17 @@ include('Common/Templates/head.php');
             resultspack_weather_direction_verification_label(
                 'map_satellite'
             )
+        )
+        . '</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Tempest library</td>';
+    echo '<td>'
+        . (
+            function_exists('resultspack_weather_fetch_stations')
+                ? 'Loaded'
+                : 'Missing'
         )
         . '</td>';
     echo '</tr>';

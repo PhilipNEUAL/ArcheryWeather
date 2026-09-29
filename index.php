@@ -5,6 +5,7 @@ require_once(__DIR__ . '/Lib/config.php');
 require_once(__DIR__ . '/Lib/helpers.php');
 require_once(__DIR__ . '/Lib/tempest.php');
 require_once(__DIR__ . '/Lib/ianseo.php');
+require_once(__DIR__ . '/Lib/schema.php');
 
 $PAGE_TITLE = 'Archery Weather';
 
@@ -185,4 +186,47 @@ include('Common/Templates/head.php');
 
     echo '</table>';
 
-include('Common/Templates/tail.php');
+// Weather database test
+    $weatherStorage =
+        resultspack_weather_existing_storage_status();
+
+    echo '<br>';
+
+    echo '<table class="Tabella freeWidth">';
+    echo '<tr><th class="Main" colspan="3">Existing weather storage</th></tr>';
+
+    echo '<tr>';
+    echo '<th class="Title">Data</th>';
+    echo '<th class="Title">Table found</th>';
+    echo '<th class="Title">Rows</th>';
+    echo '</tr>';
+
+    foreach ($weatherStorage as $key => $storage) {
+        echo '<tr>';
+
+        echo '<td class="Bold">'
+            . htmlspecialchars(
+                ucwords(
+                    str_replace('_', ' ', $key)
+                )
+            )
+            . '</td>';
+
+        echo '<td>'
+            . ($storage['exists'] ? 'Yes' : 'No')
+            . '</td>';
+
+        echo '<td>'
+            . (
+                $storage['count'] !== null
+                    ? (int) $storage['count']
+                    : '—'
+            )
+            . '</td>';
+
+        echo '</tr>';
+    }
+
+    echo '</table>';
+
+    include('Common/Templates/tail.php');

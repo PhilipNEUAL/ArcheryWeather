@@ -1,0 +1,125 @@
+<?php
+
+// Format Unix timestamp in the requested weather-session timezone.
+function resultspack_weather_format_timestamp(
+    $timestamp,
+    $timezone = null,
+    $format = 'Y-m-d H:i:s'
+) {
+    if (!is_numeric($timestamp)) {
+        return 'Not available';
+    }
+
+    if ($timezone === null || trim((string) $timezone) === '') {
+        $timezone = resultspack_weather_timezone();
+    }
+
+    try {
+        $tz = new DateTimeZone((string) $timezone);
+    } catch (Exception $e) {
+        $tz = new DateTimeZone('UTC');
+    }
+
+    $date = new DateTimeImmutable('@' . (int) $timestamp);
+
+    return $date
+        ->setTimezone($tz)
+        ->format($format);
+}
+
+// Format numeric weather value for display.
+function resultspack_weather_format_number($value, $decimals = 1)
+{
+    if ($value === null || $value === '' || !is_numeric($value)) {
+        return 'Not available';
+    }
+
+    return number_format((float) $value, $decimals, '.', '');
+}
+
+// Convert compass bearing into 16-point compass direction.
+function resultspack_weather_compass_direction($degrees)
+{
+    if (!is_numeric($degrees)) {
+        return 'Unknown';
+    }
+
+    $points = array(
+        'N', 'NNE', 'NE', 'ENE',
+        'E', 'ESE', 'SE', 'SSE',
+        'S', 'SSW', 'SW', 'WSW',
+        'W', 'WNW', 'NW', 'NNW'
+    );
+
+    $degrees = fmod(((float) $degrees + 360), 360);
+    $index = (int) floor(($degrees + 11.25) / 22.5) % 16;
+
+    return $points[$index];
+}
+
+
+/* Describe wind direction relative to the shooting direction.
+ * Tempest wind direction is the direction the wind is coming FROM.
+ * Shooting bearing is the direction from the shooting line towards the targets.*/
+function resultspack_weather_relative_wind(
+    $windDirection,
+    $shootingBearing
+) {
+    if (!is_numeric($windDirection) || !is_numeric($shootingBearing)) {
+        return null;
+    }
+
+    $windDirection =
+        fmod(((float) $windDirection + 360), 360);
+
+    $shootingBearing =
+        fmod(((float) $shootingBearing + 360), 360);
+
+    $relative =
+        fmod(
+            $windDirection - $shootingBearing + 540,
+            360
+        ) - 180;
+
+    $absolute = abs($relative);
+
+    if ($absolute <= 22.5) {
+        $label = 'Headwind';
+
+    } elseif ($absolute >= 157.5) {
+        $label = 'Tailwind';
+
+    } elseif ($relative > 0) {
+        if ($absolute < 67.5) {
+            $label =
+                'Quartering headwind from the right';
+
+        } elseif ($absolute <= 112.5) {
+            $label =
+                'Right-to-left crosswind';
+
+        } else {
+            $label =
+                'Quartering tailwind from the right';
+        }
+
+    } else {
+        if ($absolute < 67.5) {
+            $label =
+                'Quartering headwind from the left';
+
+        } elseif ($absolute <= 112.5) {
+            $label =
+                'Left-to-right crosswind';
+
+        } else {
+            $label =
+                'Quartering tailwind from the left';
+        }
+    }
+
+    return array(
+        'angle' => round($relative, 1),
+        'label' => $label,
+    );
+}

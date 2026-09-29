@@ -85,6 +85,27 @@ include('Common/Templates/head.php');
         . '</td>';
     echo '</tr>';
 
+    echo '<tr>';
+    echo '<td class="Bold">Direction normalisation</td>';
+    echo '<td>'
+        . resultspack_weather_normalise_direction(-1)
+        . '°</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Direction difference</td>';
+    echo '<td>'
+        . resultspack_weather_direction_difference(56, 359)
+        . '°</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Corrected direction</td>';
+    echo '<td>'
+        . resultspack_weather_apply_direction_correction(56, -57)
+        . '°</td>';
+    echo '</tr>';
+
     echo '</table>';
 
 include('Common/Templates/tail.php');

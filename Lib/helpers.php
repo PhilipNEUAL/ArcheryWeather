@@ -123,3 +123,62 @@ function resultspack_weather_relative_wind(
         'label' => $label,
     );
 }
+
+// Normalise a compass direction to 0 <= direction < 360.
+function resultspack_weather_normalise_direction($degrees)
+{
+    if ($degrees === null || $degrees === '' || !is_numeric($degrees)) {
+        return null;
+    }
+
+    $degrees = fmod((float) $degrees, 360.0);
+
+    if ($degrees < 0) {
+        $degrees += 360.0;
+    }
+
+    return $degrees;
+}
+
+// Return the shortest signed correction from one direction to another. Example: recorded = 56, verified = 359, result = -57.
+function resultspack_weather_direction_difference($recorded, $verified)
+{
+    $recorded = resultspack_weather_normalise_direction($recorded);
+    $verified = resultspack_weather_normalise_direction($verified);
+
+    if ($recorded === null || $verified === null) {
+        return null;
+    }
+
+    $difference = $verified - $recorded;
+
+    while ($difference > 180) {
+        $difference -= 360;
+    }
+
+    while ($difference <= -180) {
+        $difference += 360;
+    }
+
+    return $difference;
+}
+
+// Apply correction to direction reference without changing raw data.
+function resultspack_weather_apply_direction_correction(
+    $direction,
+    $correction = 0
+) {
+    $direction = resultspack_weather_normalise_direction($direction);
+
+    if ($direction === null) {
+        return null;
+    }
+
+    if (!is_numeric($correction)) {
+        $correction = 0;
+    }
+
+    return resultspack_weather_normalise_direction(
+        $direction + (float) $correction
+    );
+}

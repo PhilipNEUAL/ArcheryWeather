@@ -52,6 +52,88 @@ if (!$session) {
     exit;
 }
 
+$tournaments =
+    resultspack_weather_fetch_tournament_list();
+
+$competitionName =
+    'Competition ' . $session['tournament_id'];
+
+foreach ($tournaments as $tournament) {
+    if (
+        (int) $tournament['id']
+        === (int) $session['tournament_id']
+    ) {
+        $competitionName =
+            ($tournament['code'] !== ''
+                ? $tournament['code'] . ' — '
+                : '')
+            . $tournament['name'];
+
+        break;
+    }
+}
+
+$observations =
+    resultspack_weather_get_observations(
+        $session['id']
+    );
+
+$quality =
+    resultspack_weather_session_quality(
+        $session['id']
+    );
+
+$startedLabel =
+    resultspack_weather_format_timestamp(
+        $session['started_epoch'],
+        $session['timezone'],
+        'd/m/Y H:i:s'
+    );
+
+if ($session['ended_epoch'] !== null) {
+    $endedLabel =
+        resultspack_weather_format_timestamp(
+            $session['ended_epoch'],
+            $session['timezone'],
+            'd/m/Y H:i:s'
+        );
+
+    $durationSeconds =
+        max(
+            0,
+            $session['ended_epoch']
+            - $session['started_epoch']
+        );
+
+    $durationMinutes =
+        (int) floor(
+            $durationSeconds / 60
+        );
+
+    $durationHours =
+        (int) floor(
+            $durationMinutes / 60
+        );
+
+    $remainingMinutes =
+        $durationMinutes % 60;
+
+    if ($durationHours > 0) {
+        $durationLabel =
+            $durationHours
+            . ' h '
+            . $remainingMinutes
+            . ' min';
+    } else {
+        $durationLabel =
+            $remainingMinutes
+            . ' min';
+    }
+} else {
+    $endedLabel = 'In progress';
+    $durationLabel = 'In progress';
+}
+
 echo '<table class="Tabella freeWidth">';
 
 echo '<tr>';
@@ -62,22 +144,9 @@ echo '</th>';
 echo '</tr>';
 
 echo '<tr>';
-echo '<td class="Bold">Session ID</td>';
+echo '<td class="Bold">Competition</td>';
 echo '<td>'
-    . (int) $session['id']
-    . '</td>';
-echo '</tr>';
-
-echo '<tr>';
-echo '<td class="Bold">Started</td>';
-echo '<td>'
-    . htmlspecialchars(
-        resultspack_weather_format_timestamp(
-            $session['started_epoch'],
-            $session['timezone'],
-            'd/m/Y H:i:s'
-        )
-    )
+    . htmlspecialchars($competitionName)
     . '</td>';
 echo '</tr>';
 
@@ -91,6 +160,128 @@ echo '<td>'
     )
     . '</td>';
 echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Station</td>';
+echo '<td>'
+    . htmlspecialchars(
+        $session['station_name']
+    )
+    . ' ('
+    . (int) $session['station_id']
+    . ')</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Started</td>';
+echo '<td>'
+    . htmlspecialchars($startedLabel)
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Ended</td>';
+echo '<td>'
+    . htmlspecialchars($endedLabel)
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Duration</td>';
+echo '<td>'
+    . htmlspecialchars($durationLabel)
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Timezone</td>';
+echo '<td>'
+    . htmlspecialchars(
+        $session['timezone']
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Shooting bearing</td>';
+echo '<td>'
+    . (
+        $session['shooting_bearing'] !== null
+            ? htmlspecialchars(
+                (string) $session['shooting_bearing']
+            ) . '°'
+            : 'Not recorded'
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Sensor height</td>';
+echo '<td>'
+    . (
+        $session['sensor_height'] !== null
+            ? htmlspecialchars(
+                (string) $session['sensor_height']
+            ) . ' m'
+            : 'Not recorded'
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Position notes</td>';
+echo '<td>'
+    . (
+        $session['position_notes'] !== ''
+            ? nl2br(
+                htmlspecialchars(
+                    $session['position_notes']
+                )
+            )
+            : 'None'
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Observations stored</td>';
+echo '<td>'
+    . count($observations)
+    . '</td>';
+echo '</tr>';
+
+if ($quality) {
+    echo '<tr>';
+    echo '<td class="Bold">Expected observations</td>';
+    echo '<td>'
+        . (int) $quality['expected']
+        . '</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Data coverage</td>';
+    echo '<td>'
+        . resultspack_weather_format_number(
+            $quality['coverage_percent'],
+            1
+        )
+        . '%</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Missing observations</td>';
+    echo '<td>'
+        . (int) $quality['missing']
+        . '</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Longest gap</td>';
+    echo '<td>'
+        . (int) $quality['longest_gap_minutes']
+        . ' min</td>';
+    echo '</tr>';
+}
 
 echo '</table>';
 

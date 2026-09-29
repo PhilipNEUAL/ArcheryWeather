@@ -420,6 +420,21 @@ include('Common/Templates/head.php');
             echo '</tr>';
         }
 
+        $circularMeanTest =
+            resultspack_weather_circular_mean(
+                array(359, 1)
+            );
+
+        echo '<tr>';
+        echo '<td class="Bold">Circular mean test</td>';
+        echo '<td>'
+            . resultspack_weather_format_number(
+                $circularMeanTest,
+                1
+            )
+            . '°</td>';
+        echo '</tr>';
+
         echo '</table>';
     }
 

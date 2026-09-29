@@ -182,3 +182,61 @@ function resultspack_weather_apply_direction_correction(
         $direction + (float) $correction
     );
 }
+
+// Return the shooting bearing.
+function resultspack_weather_effective_shooting_bearing(array $session)
+{
+    return resultspack_weather_apply_direction_correction(
+        $session['shooting_bearing'] ?? null,
+        $session['direction_correction'] ?? 0
+    );
+}
+
+// Return Tempest wind direction corrected to the same geographic reference.
+function resultspack_weather_effective_wind_direction(
+    $windDirection,
+    array $session
+) {
+    return resultspack_weather_apply_direction_correction(
+        $windDirection,
+        $session['direction_correction'] ?? 0
+    );
+}
+
+// Validate how the shooting direction was verified.
+function resultspack_weather_direction_verification($value)
+{
+    $value = strtolower(trim((string) $value));
+
+    $allowed = array(
+        'unverified',
+        'phone_compass',
+        'map_satellite',
+        'second_compass',
+        'known_site_alignment',
+        'surveyed_bearing',
+        'other',
+    );
+
+    return in_array($value, $allowed, true)
+        ? $value
+        : 'unverified';
+}
+
+// Readable label for verified direction method.
+function resultspack_weather_direction_verification_label($value)
+{
+    $value = resultspack_weather_direction_verification($value);
+
+    $labels = array(
+        'unverified' => 'Unverified',
+        'phone_compass' => 'Phone compass',
+        'map_satellite' => 'Map / satellite',
+        'second_compass' => 'Second compass',
+        'known_site_alignment' => 'Known site alignment',
+        'surveyed_bearing' => 'Surveyed bearing',
+        'other' => 'Other',
+    );
+
+    return $labels[$value] ?? 'Unverified';
+}

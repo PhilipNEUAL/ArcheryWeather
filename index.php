@@ -106,6 +106,39 @@ include('Common/Templates/head.php');
         . '°</td>';
     echo '</tr>';
 
+    $testSession = array(
+        'shooting_bearing' => 56,
+        'direction_correction' => -57,
+    );
+
+    echo '<tr>';
+    echo '<td class="Bold">Effective shooting bearing</td>';
+    echo '<td>'
+        . resultspack_weather_effective_shooting_bearing($testSession)
+        . '°</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Corrected wind direction</td>';
+    echo '<td>'
+        . resultspack_weather_effective_wind_direction(
+            182,
+            $testSession
+        )
+        . '°</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Verification label</td>';
+    echo '<td>'
+        . htmlspecialchars(
+            resultspack_weather_direction_verification_label(
+                'map_satellite'
+            )
+        )
+        . '</td>';
+    echo '</tr>';
+
     echo '</table>';
 
 include('Common/Templates/tail.php');

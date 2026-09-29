@@ -313,6 +313,80 @@ include('Common/Templates/head.php');
 
     echo '</table>';
 
+// Observation reading test
+    $observationTestSession = null;
 
+    foreach ($weatherSessions as $session) {
+        if (
+            resultspack_weather_count_observations(
+                $session['id']
+            ) > 0
+        ) {
+            $observationTestSession = $session;
+            break;
+        }
+    }
+
+    if ($observationTestSession) {
+        $testObservations =
+            resultspack_weather_get_observations(
+                $observationTestSession['id']
+            );
+
+        echo '<br>';
+
+        echo '<table class="Tabella freeWidth">';
+        echo '<tr><th class="Main" colspan="2">Observation reading test</th></tr>';
+
+        echo '<tr>';
+        echo '<td class="Bold">Session</td>';
+        echo '<td>'
+            . (int) $observationTestSession['id']
+            . '</td>';
+        echo '</tr>';
+
+        echo '<tr>';
+        echo '<td class="Bold">Observations returned</td>';
+        echo '<td>'
+            . count($testObservations)
+            . '</td>';
+        echo '</tr>';
+
+        if ($testObservations) {
+            $firstObservation =
+                reset($testObservations);
+
+            $lastObservation =
+                end($testObservations);
+
+            echo '<tr>';
+            echo '<td class="Bold">First observation</td>';
+            echo '<td>'
+                . htmlspecialchars(
+                    resultspack_weather_format_timestamp(
+                        $firstObservation['timestamp'],
+                        $observationTestSession['timezone'],
+                        'd/m/Y H:i:s'
+                    )
+                )
+                . '</td>';
+            echo '</tr>';
+
+            echo '<tr>';
+            echo '<td class="Bold">Last observation</td>';
+            echo '<td>'
+                . htmlspecialchars(
+                    resultspack_weather_format_timestamp(
+                        $lastObservation['timestamp'],
+                        $observationTestSession['timezone'],
+                        'd/m/Y H:i:s'
+                    )
+                )
+                . '</td>';
+            echo '</tr>';
+        }
+
+        echo '</table>';
+    }
 
     include('Common/Templates/tail.php');

@@ -4,6 +4,7 @@ require_once(__DIR__ . '/Lib/bootstrap.php');
 require_once(__DIR__ . '/Lib/config.php');
 require_once(__DIR__ . '/Lib/helpers.php');
 require_once(__DIR__ . '/Lib/tempest.php');
+require_once(__DIR__ . '/Lib/ianseo.php');
 
 $PAGE_TITLE = 'Archery Weather';
 
@@ -150,6 +151,37 @@ include('Common/Templates/head.php');
         )
         . '</td>';
     echo '</tr>';
+
+    echo '</table>';
+
+// IANSEO database test
+    $tournaments = resultspack_weather_fetch_tournament_list();
+
+    echo '<br>';
+
+    echo '<table class="Tabella freeWidth">';
+    echo '<tr><th class="Main" colspan="2">IANSEO database test</th></tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Tournaments found</td>';
+    echo '<td>' . count($tournaments) . '</td>';
+    echo '</tr>';
+
+    if ($tournaments) {
+        $latestTournament = reset($tournaments);
+
+        echo '<tr>';
+        echo '<td class="Bold">Most recent tournament</td>';
+        echo '<td>'
+            . htmlspecialchars(
+                ($latestTournament['code'] !== ''
+                    ? $latestTournament['code'] . ' — '
+                    : '')
+                . $latestTournament['name']
+            )
+            . '</td>';
+        echo '</tr>';
+    }
 
     echo '</table>';
 

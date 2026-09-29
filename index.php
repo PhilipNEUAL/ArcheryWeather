@@ -7,6 +7,7 @@ require_once(__DIR__ . '/Lib/tempest.php');
 require_once(__DIR__ . '/Lib/ianseo.php');
 require_once(__DIR__ . '/Lib/schema.php');
 require_once(__DIR__ . '/Lib/sessions.php');
+require_once(__DIR__ . '/Lib/observations.php');
 
 $PAGE_TITLE = 'Archery Weather';
 
@@ -239,11 +240,11 @@ include('Common/Templates/head.php');
     echo '<br>';
 
     echo '<table class="Tabella freeWidth">';
-    echo '<tr><th class="Main" colspan="4">Weather sessions test</th></tr>';
+    echo '<tr><th class="Main" colspan="5">Weather sessions test</th></tr>';
 
     echo '<tr>';
     echo '<td class="Bold">Completed sessions</td>';
-    echo '<td colspan="3">'
+    echo '<td colspan="4">'
         . count($completedWeatherSessions)
         . '</td>';
     echo '</tr>';
@@ -253,6 +254,7 @@ include('Common/Templates/head.php');
     echo '<th class="Title">Competition</th>';
     echo '<th class="Title">Started</th>';
     echo '<th class="Title">Status</th>';
+    echo '<th class="Title">Observations</th>';
     echo '</tr>';
 
     foreach ($weatherSessions as $session) {
@@ -297,6 +299,12 @@ include('Common/Templates/head.php');
         echo '<td>'
             . htmlspecialchars(
                 ucfirst($session['research_status'])
+            )
+            . '</td>';
+
+        echo '<td>'
+            . resultspack_weather_count_observations(
+                $session['id']
             )
             . '</td>';
 

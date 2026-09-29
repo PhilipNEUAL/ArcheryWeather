@@ -10,6 +10,7 @@ require_once(__DIR__ . '/Lib/sessions.php');
 require_once(__DIR__ . '/Lib/observations.php');
 require_once(__DIR__ . '/Lib/summary.php');
 require_once(__DIR__ . '/Lib/quality.php');
+require_once(__DIR__ . '/Lib/events.php');
 
 $PAGE_TITLE = 'Archery Weather';
 
@@ -242,11 +243,11 @@ include('Common/Templates/head.php');
     echo '<br>';
 
     echo '<table class="Tabella freeWidth">';
-    echo '<tr><th class="Main" colspan="5">Weather sessions test</th></tr>';
+    echo '<tr><th class="Main" colspan="6">Weather sessions test</th></tr>';
 
     echo '<tr>';
     echo '<td class="Bold">Completed sessions</td>';
-    echo '<td colspan="4">'
+    echo '<td colspan="5">'
         . count($completedWeatherSessions)
         . '</td>';
     echo '</tr>';
@@ -257,6 +258,7 @@ include('Common/Templates/head.php');
     echo '<th class="Title">Started</th>';
     echo '<th class="Title">Status</th>';
     echo '<th class="Title">Observations</th>';
+    echo '<th class="Title">Events</th>';
     echo '</tr>';
 
     foreach ($weatherSessions as $session) {
@@ -308,6 +310,15 @@ include('Common/Templates/head.php');
             . resultspack_weather_count_observations(
                 $session['id']
             )
+            . '</td>';
+
+        $sessionEvents =
+            resultspack_weather_get_events(
+                $session['id']
+            );
+
+        echo '<td>'
+            . count($sessionEvents)
             . '</td>';
 
         echo '</tr>';

@@ -121,9 +121,17 @@ if (!$weatherSessions) {
 
         echo '<tr>';
 
-        echo '<td>'
+        echo '<td>';
+
+        echo '<a href="SessionView.php?session_id='
             . (int) $session['id']
-            . '</td>';
+            . '">';
+
+        echo (int) $session['id'];
+
+        echo '</a>';
+
+        echo '</td>';
 
         echo '<td>'
             . htmlspecialchars($competitionName)

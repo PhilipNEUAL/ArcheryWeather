@@ -6,6 +6,7 @@ require_once(__DIR__ . '/Lib/helpers.php');
 require_once(__DIR__ . '/Lib/tempest.php');
 require_once(__DIR__ . '/Lib/ianseo.php');
 require_once(__DIR__ . '/Lib/schema.php');
+require_once(__DIR__ . '/Lib/sessions.php');
 
 $PAGE_TITLE = 'Archery Weather';
 
@@ -221,6 +222,72 @@ include('Common/Templates/head.php');
                 $storage['count'] !== null
                     ? (int) $storage['count']
                     : '—'
+            )
+            . '</td>';
+
+        echo '</tr>';
+    }
+
+    echo '</table>';
+
+// Weather session reading test
+    $weatherSessions =
+        resultspack_weather_get_sessions();
+
+    echo '<br>';
+
+    echo '<table class="Tabella freeWidth">';
+    echo '<tr><th class="Main" colspan="4">Weather sessions test</th></tr>';
+
+    echo '<tr>';
+    echo '<th class="Title">Session</th>';
+    echo '<th class="Title">Competition</th>';
+    echo '<th class="Title">Started</th>';
+    echo '<th class="Title">Status</th>';
+    echo '</tr>';
+
+    foreach ($weatherSessions as $session) {
+        $competitionName =
+            'Competition ' . $session['tournament_id'];
+
+        foreach ($tournaments as $tournament) {
+            if (
+                (int) $tournament['id']
+                === (int) $session['tournament_id']
+            ) {
+                $competitionName =
+                    ($tournament['code'] !== ''
+                        ? $tournament['code'] . ' — '
+                        : '')
+                    . $tournament['name'];
+
+                break;
+            }
+        }
+
+        echo '<tr>';
+
+        echo '<td>'
+            . (int) $session['id']
+            . '</td>';
+
+        echo '<td>'
+            . htmlspecialchars($competitionName)
+            . '</td>';
+
+        echo '<td>'
+            . htmlspecialchars(
+                resultspack_weather_format_timestamp(
+                    $session['started_epoch'],
+                    $session['timezone'],
+                    'd/m/Y H:i:s'
+                )
+            )
+            . '</td>';
+
+        echo '<td>'
+            . htmlspecialchars(
+                ucfirst($session['research_status'])
             )
             . '</td>';
 

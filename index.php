@@ -8,6 +8,7 @@ require_once(__DIR__ . '/Lib/ianseo.php');
 require_once(__DIR__ . '/Lib/schema.php');
 require_once(__DIR__ . '/Lib/sessions.php');
 require_once(__DIR__ . '/Lib/observations.php');
+require_once(__DIR__ . '/Lib/summary.php');
 
 $PAGE_TITLE = 'Archery Weather';
 
@@ -359,6 +360,17 @@ include('Common/Templates/head.php');
             $lastObservation =
                 end($testObservations);
 
+            $windValues =
+                array_column(
+                    $testObservations,
+                    'wind_avg'
+                );
+
+            $windSummary =
+                resultspack_weather_numeric_summary(
+                    $windValues
+                );
+
             echo '<tr>';
             echo '<td class="Bold">First observation</td>';
             echo '<td>'
@@ -383,6 +395,28 @@ include('Common/Templates/head.php');
                     )
                 )
                 . '</td>';
+            echo '</tr>';
+        }
+
+        if ($windSummary) {
+            echo '<tr>';
+            echo '<td class="Bold">Average wind</td>';
+            echo '<td>'
+                . resultspack_weather_format_number(
+                    $windSummary['average'],
+                    2
+                )
+                . ' mph</td>';
+            echo '</tr>';
+
+            echo '<tr>';
+            echo '<td class="Bold">Maximum average wind</td>';
+            echo '<td>'
+                . resultspack_weather_format_number(
+                    $windSummary['max'],
+                    2
+                )
+                . ' mph</td>';
             echo '</tr>';
         }
 

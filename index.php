@@ -11,6 +11,7 @@ require_once(__DIR__ . '/Lib/observations.php');
 require_once(__DIR__ . '/Lib/summary.php');
 require_once(__DIR__ . '/Lib/quality.php');
 require_once(__DIR__ . '/Lib/events.php');
+require_once(__DIR__ . '/Lib/corrections.php');
 
 $PAGE_TITLE = 'Archery Weather';
 
@@ -243,11 +244,11 @@ include('Common/Templates/head.php');
     echo '<br>';
 
     echo '<table class="Tabella freeWidth">';
-    echo '<tr><th class="Main" colspan="6">Weather sessions test</th></tr>';
+    echo '<tr><th class="Main" colspan="8">Weather sessions test</th></tr>';
 
     echo '<tr>';
     echo '<td class="Bold">Completed sessions</td>';
-    echo '<td colspan="5">'
+    echo '<td colspan="7">'
         . count($completedWeatherSessions)
         . '</td>';
     echo '</tr>';
@@ -259,6 +260,8 @@ include('Common/Templates/head.php');
     echo '<th class="Title">Status</th>';
     echo '<th class="Title">Observations</th>';
     echo '<th class="Title">Events</th>';
+    echo '<th class="Title">Timing corrections</th>';
+    echo '<th class="Title">Direction corrections</th>';
     echo '</tr>';
 
     foreach ($weatherSessions as $session) {
@@ -319,6 +322,24 @@ include('Common/Templates/head.php');
 
         echo '<td>'
             . count($sessionEvents)
+            . '</td>';
+
+        $timingCorrections =
+            resultspack_weather_get_timing_corrections(
+                $session['id']
+            );
+
+        $directionCorrections =
+            resultspack_weather_get_direction_corrections(
+                $session['id']
+            );
+
+        echo '<td>'
+            . count($timingCorrections)
+            . '</td>';
+
+        echo '<td>'
+            . count($directionCorrections)
             . '</td>';
 
         echo '</tr>';

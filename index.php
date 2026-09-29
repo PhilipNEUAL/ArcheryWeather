@@ -9,6 +9,7 @@ require_once(__DIR__ . '/Lib/schema.php');
 require_once(__DIR__ . '/Lib/sessions.php');
 require_once(__DIR__ . '/Lib/observations.php');
 require_once(__DIR__ . '/Lib/summary.php');
+require_once(__DIR__ . '/Lib/quality.php');
 
 $PAGE_TITLE = 'Archery Weather';
 
@@ -334,6 +335,18 @@ include('Common/Templates/head.php');
                 $observationTestSession['id']
             );
 
+        $testTimestamps =
+            resultspack_weather_get_observation_timestamps(
+                $observationTestSession['id']
+            );
+
+        $qualityTest =
+            resultspack_weather_session_quality(
+                $observationTestSession['id']
+            );
+
+        $windSummary = null;
+
         echo '<br>';
 
         echo '<table class="Tabella freeWidth">';
@@ -434,6 +447,46 @@ include('Common/Templates/head.php');
             )
             . '°</td>';
         echo '</tr>';
+
+        echo '<tr>';
+        echo '<td class="Bold">Timestamps returned</td>';
+        echo '<td>'
+            . count($testTimestamps)
+            . '</td>';
+        echo '</tr>';
+
+        if ($qualityTest) {
+            echo '<tr>';
+            echo '<td class="Bold">Expected observations</td>';
+            echo '<td>'
+                . (int) $qualityTest['expected']
+                . '</td>';
+            echo '</tr>';
+
+            echo '<tr>';
+            echo '<td class="Bold">Coverage</td>';
+            echo '<td>'
+                . resultspack_weather_format_number(
+                    $qualityTest['coverage_percent'],
+                    1
+                )
+                . '%</td>';
+            echo '</tr>';
+
+            echo '<tr>';
+            echo '<td class="Bold">Missing observations</td>';
+            echo '<td>'
+                . (int) $qualityTest['missing']
+                . '</td>';
+            echo '</tr>';
+
+            echo '<tr>';
+            echo '<td class="Bold">Longest gap</td>';
+            echo '<td>'
+                . (int) $qualityTest['longest_gap_minutes']
+                . ' minute(s)</td>';
+            echo '</tr>';
+        }
 
         echo '</table>';
     }

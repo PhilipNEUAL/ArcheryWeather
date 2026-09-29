@@ -200,3 +200,53 @@ function resultspack_weather_get_observations($sessionId)
 
     return $observations;
 }
+
+// Return the timestamps for one weather session.
+function resultspack_weather_get_observation_timestamps($sessionId)
+{
+    $sessionId = (int) $sessionId;
+
+    if ($sessionId <= 0) {
+        return array();
+    }
+
+    if (
+        !resultspack_weather_table_exists(
+            'CustomResultsPackWeatherObservations'
+        )
+    ) {
+        return array();
+    }
+
+    $session =
+        resultspack_weather_get_completed_session(
+            $sessionId
+        );
+
+    $where =
+        "CrwoSession=" . $sessionId;
+
+    if ($session) {
+        $where .=
+            " AND CrwoTimestamp>="
+            . (int) $session['started_epoch']
+            . " AND CrwoTimestamp<="
+            . (int) $session['ended_epoch'];
+    }
+
+    $result = safe_r_sql(
+        "SELECT CrwoTimestamp
+        FROM CustomResultsPackWeatherObservations
+        WHERE " . $where . "
+        ORDER BY CrwoTimestamp ASC"
+    );
+
+    $timestamps = array();
+
+    while ($row = safe_fetch($result)) {
+        $timestamps[] =
+            (int) $row->CrwoTimestamp;
+    }
+
+    return $timestamps;
+}

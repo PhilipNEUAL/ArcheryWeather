@@ -240,3 +240,134 @@ function resultspack_weather_direction_verification_label($value)
 
     return $labels[$value] ?? 'Unverified';
 }
+
+// Validate a station offset in metres.
+function resultspack_weather_site_offset($value)
+{
+    if (
+        $value === null
+        || $value === ''
+        || !is_numeric($value)
+    ) {
+        return null;
+    }
+
+    $value = (float) $value;
+
+    if ($value < -1000 || $value > 1000) {
+        return null;
+    }
+
+    return $value;
+}
+
+// Validate the recorded ground-surface category.
+function resultspack_weather_ground_surface($value)
+{
+    $value =
+        strtolower(
+            trim((string) $value)
+        );
+
+    $allowed = array(
+        '',
+        'grass',
+        'artificial_turf',
+        'hardstanding',
+        'indoor_floor',
+        'mixed',
+        'other',
+    );
+
+    return in_array(
+        $value,
+        $allowed,
+        true
+    )
+        ? $value
+        : '';
+}
+
+// Validate the recorded site-exposure category.
+function resultspack_weather_site_exposure($value)
+{
+    $value =
+        strtolower(
+            trim((string) $value)
+        );
+
+    $allowed = array(
+        '',
+        'open',
+        'partly_sheltered',
+        'sheltered',
+        'indoor',
+        'other',
+    );
+
+    return in_array(
+        $value,
+        $allowed,
+        true
+    )
+        ? $value
+        : '';
+}
+
+// Human-readable fore/aft station position.
+function resultspack_weather_forward_offset_label($value)
+{
+    if (
+        $value === null
+        || $value === ''
+        || !is_numeric($value)
+    ) {
+        return 'Not recorded';
+    }
+
+    $value = (float) $value;
+
+    if (abs($value) < 0.005) {
+        return 'On shooting line';
+    }
+
+    return resultspack_weather_format_number(
+        abs($value),
+        1
+    )
+        . ' m '
+        . (
+            $value > 0
+                ? 'toward targets'
+                : 'behind shooting line'
+        );
+}
+
+// Human-readable lateral station position.
+function resultspack_weather_lateral_offset_label($value)
+{
+    if (
+        $value === null
+        || $value === ''
+        || !is_numeric($value)
+    ) {
+        return 'Not recorded';
+    }
+
+    $value = (float) $value;
+
+    if (abs($value) < 0.005) {
+        return 'On field centre line';
+    }
+
+    return resultspack_weather_format_number(
+        abs($value),
+        1
+    )
+        . ' m '
+        . (
+            $value > 0
+                ? 'right of centre'
+                : 'left of centre'
+        );
+}

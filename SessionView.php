@@ -143,6 +143,10 @@ echo 'Weather Session '
 echo '</th>';
 echo '</tr>';
 
+echo '<th class="Title" colspan="2">';
+echo 'Session data';
+echo '</th>';
+
 echo '<tr>';
 echo '<td class="Bold">Competition</td>';
 echo '<td>'
@@ -202,15 +206,67 @@ echo '<td>'
     . '</td>';
 echo '</tr>';
 
+$effectiveShootingBearing =
+    resultspack_weather_effective_shooting_bearing(
+        $session
+    );
+
 echo '<tr>';
-echo '<td class="Bold">Shooting bearing</td>';
+echo '<th class="Title" colspan="2">';
+echo 'Direction reference';
+echo '</th>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Recorded shooting bearing</td>';
 echo '<td>'
     . (
         $session['shooting_bearing'] !== null
-            ? htmlspecialchars(
-                (string) $session['shooting_bearing']
+            ? resultspack_weather_format_number(
+                $session['shooting_bearing'],
+                1
             ) . '°'
             : 'Not recorded'
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Direction correction</td>';
+echo '<td>'
+    . (
+        isset($session['direction_correction'])
+        && is_numeric($session['direction_correction'])
+            ? resultspack_weather_format_number(
+                $session['direction_correction'],
+                1
+            ) . '°'
+            : '0.0°'
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Effective shooting bearing</td>';
+echo '<td>'
+    . (
+        $effectiveShootingBearing !== null
+            ? resultspack_weather_format_number(
+                $effectiveShootingBearing,
+                1
+            ) . '°'
+            : 'Not available'
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Direction verification</td>';
+echo '<td>'
+    . htmlspecialchars(
+        resultspack_weather_direction_verification_label(
+            $session['direction_verification']
+        )
     )
     . '</td>';
 echo '</tr>';
@@ -223,6 +279,72 @@ echo '<td>'
             ? htmlspecialchars(
                 (string) $session['sensor_height']
             ) . ' m'
+            : 'Not recorded'
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<th class="Title" colspan="2">';
+echo 'Site geometry';
+echo '</th>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Station fore/aft position</td>';
+echo '<td>'
+    . htmlspecialchars(
+        resultspack_weather_forward_offset_label(
+            $session['forward_offset']
+        )
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Station lateral position</td>';
+echo '<td>'
+    . htmlspecialchars(
+        resultspack_weather_lateral_offset_label(
+            $session['lateral_offset']
+        )
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Ground surface</td>';
+echo '<td>'
+    . (
+        $session['ground_surface'] !== ''
+            ? htmlspecialchars(
+                ucwords(
+                    str_replace(
+                        '_',
+                        ' ',
+                        $session['ground_surface']
+                    )
+                )
+            )
+            : 'Not recorded'
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Site exposure</td>';
+echo '<td>'
+    . (
+        $session['exposure'] !== ''
+            ? htmlspecialchars(
+                ucwords(
+                    str_replace(
+                        '_',
+                        ' ',
+                        $session['exposure']
+                    )
+                )
+            )
             : 'Not recorded'
     )
     . '</td>';

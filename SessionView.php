@@ -11,6 +11,7 @@ require_once(__DIR__ . '/Lib/quality.php');
 require_once(__DIR__ . '/Lib/events.php');
 require_once(__DIR__ . '/Lib/corrections.php');
 require_once(__DIR__ . '/Lib/summary.php');
+require_once(__DIR__ . '/Lib/graphs.php');
 
 $sessionInput = $_GET['session_id'] ?? '';
 
@@ -582,5 +583,13 @@ if ($observations) {
 echo '<p>';
 echo '<a href="NewSession.php">Create a Test weather session</a>';
 echo '</p>';
+
+$events = resultspack_weather_get_events($session['id']);
+
+resultspack_weather_render_wind_graph(
+    $observations,
+    $events,
+    $session
+);
 
 include('Common/Templates/tail.php');

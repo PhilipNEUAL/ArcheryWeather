@@ -192,9 +192,21 @@ echo '</tr>';
 
 echo '<tr>';
 echo '<td class="Bold">Duration</td>';
-echo '<td>'
-    . htmlspecialchars($durationLabel)
-    . '</td>';
+echo '<td>';
+
+echo htmlspecialchars($durationLabel);
+
+echo '<br>';
+
+echo '<a href="SessionTiming.php?session_id='
+    . (int) $session['id']
+    . '">';
+
+echo 'View or edit session timing';
+
+echo '</a>';
+
+echo '</td>';
 echo '</tr>';
 
 echo '<tr>';

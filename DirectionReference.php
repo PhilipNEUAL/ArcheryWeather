@@ -131,4 +131,97 @@ echo '</tr>';
 
 echo '</table>';
 
+echo '<br>';
+
+echo '<table class="Tabella freeWidth">';
+
+echo '<tr>';
+echo '<th class="Main" colspan="7">';
+echo 'Direction correction audit trail';
+echo ' (' . count($directionCorrections) . ')';
+echo '</th>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<th class="Title">Recorded</th>';
+echo '<th class="Title">Recorded bearing</th>';
+echo '<th class="Title">Verified bearing</th>';
+echo '<th class="Title">Previous correction</th>';
+echo '<th class="Title">New correction</th>';
+echo '<th class="Title">Verification</th>';
+echo '<th class="Title">Reason</th>';
+echo '</tr>';
+
+if (!$directionCorrections) {
+    echo '<tr>';
+
+    echo '<td colspan="7">';
+    echo 'No direction corrections have been recorded for this session.';
+    echo '</td>';
+
+    echo '</tr>';
+} else {
+    foreach ($directionCorrections as $correction) {
+        echo '<tr>';
+
+        echo '<td>'
+            . htmlspecialchars(
+                $correction['created']
+            )
+            . '</td>';
+
+        echo '<td>'
+            . (
+                $correction['recorded_bearing'] !== null
+                    ? resultspack_weather_format_number(
+                        $correction['recorded_bearing'],
+                        1
+                    ) . '°'
+                    : 'Not recorded'
+            )
+            . '</td>';
+
+        echo '<td>'
+            . resultspack_weather_format_number(
+                $correction['verified_bearing'],
+                1
+            )
+            . '°</td>';
+
+        echo '<td>'
+            . resultspack_weather_format_number(
+                $correction['old_correction'],
+                1
+            )
+            . '°</td>';
+
+        echo '<td>'
+            . resultspack_weather_format_number(
+                $correction['new_correction'],
+                1
+            )
+            . '°</td>';
+
+        echo '<td>'
+            . htmlspecialchars(
+                resultspack_weather_direction_verification_label(
+                    $correction['verification']
+                )
+            )
+            . '</td>';
+
+        echo '<td>'
+            . nl2br(
+                htmlspecialchars(
+                    $correction['reason']
+                )
+            )
+            . '</td>';
+
+        echo '</tr>';
+    }
+}
+
+echo '</table>';
+
 include('Common/Templates/tail.php');

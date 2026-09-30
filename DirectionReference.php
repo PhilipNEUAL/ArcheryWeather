@@ -224,4 +224,80 @@ if (!$directionCorrections) {
 
 echo '</table>';
 
+// New direction correction form.
+    echo '<br>';
+
+    echo '<form method="post">';
+
+    echo '<input type="hidden" name="session_id" value="'
+        . (int) $session['id']
+        . '">';
+
+    echo '<table class="Tabella freeWidth">';
+
+    echo '<tr>';
+    echo '<th class="Main" colspan="2">';
+    echo 'New Direction Correction';
+    echo '</th>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Verified shooting bearing</td>';
+    echo '<td>';
+    echo '<input type="number" ';
+    echo 'name="verified_bearing" ';
+    echo 'min="0" max="359.99" step="0.01" ';
+    echo 'required> °';
+    echo '</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Verification method</td>';
+    echo '<td>';
+
+    echo '<select name="verification" required>';
+
+    echo '<option value="">Choose verification method...</option>';
+    echo '<option value="map_satellite">Map / satellite</option>';
+    echo '<option value="second_compass">Second compass</option>';
+    echo '<option value="known_site_alignment">Known site alignment</option>';
+    echo '<option value="surveyed_bearing">Surveyed bearing</option>';
+    echo '<option value="other">Other independent method</option>';
+
+    echo '</select>';
+
+    echo '</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Reason for correction</td>';
+    echo '<td>';
+
+    echo '<textarea ';
+    echo 'name="correction_reason" ';
+    echo 'rows="3" ';
+    echo 'required ';
+    echo 'placeholder="Explain why this correction is necessary">';
+    echo '</textarea>';
+
+    echo '</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td colspan="2">';
+
+    echo '<input type="submit" ';
+    echo 'value="Save direction correction" ';
+    echo 'disabled>';
+
+    echo '<br><small>';
+    echo 'Saving is not yet enabled.';
+    echo '</small>';
+
+    echo '</td>';
+    echo '</tr>';
+
+    echo '</table>';
+    echo '</form>';
+
 include('Common/Templates/tail.php');

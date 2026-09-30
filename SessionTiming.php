@@ -208,4 +208,116 @@ if (!$timingCorrections) {
 
 echo '</table>';
 
+// New timing correction form.
+    echo '<br>';
+
+    echo '<form method="post">';
+
+    echo '<input type="hidden" name="session_id" value="'
+        . (int) $session['id']
+        . '">';
+
+    echo '<table class="Tabella freeWidth">';
+
+    echo '<tr>';
+    echo '<th class="Main" colspan="2">';
+    echo 'New Timing Correction';
+    echo '</th>';
+    echo '</tr>';
+
+    if ($session['ended_epoch'] === null) {
+
+        echo '<tr>';
+        echo '<td colspan="2">';
+        echo 'Timing corrections can only be made ';
+        echo 'to completed weather sessions.';
+        echo '</td>';
+        echo '</tr>';
+
+    } else {
+
+        $startInputValue =
+            resultspack_weather_format_timestamp(
+                $session['started_epoch'],
+                $session['timezone'],
+                'Y-m-d\TH:i:s'
+            );
+
+        $endInputValue =
+            resultspack_weather_format_timestamp(
+                $session['ended_epoch'],
+                $session['timezone'],
+                'Y-m-d\TH:i:s'
+            );
+
+        echo '<tr>';
+        echo '<td colspan="2">';
+        echo 'Use this form if the recorded start or end of the weather session needs correcting. ';
+        echo 'Times are entered in ';
+        echo '<b>'
+            . htmlspecialchars($session['timezone'])
+            . '</b>. ';
+        echo '</td>';
+        echo '</tr>';
+
+        echo '<tr>';
+        echo '<td class="Bold">Corrected start</td>';
+        echo '<td>';
+
+        echo '<input type="datetime-local" ';
+        echo 'name="started_local" ';
+        echo 'step="1" required ';
+        echo 'value="'
+            . htmlspecialchars($startInputValue)
+            . '">';
+
+        echo '</td>';
+        echo '</tr>';
+
+        echo '<tr>';
+        echo '<td class="Bold">Corrected end</td>';
+        echo '<td>';
+
+        echo '<input type="datetime-local" ';
+        echo 'name="ended_local" ';
+        echo 'step="1" required ';
+        echo 'value="'
+            . htmlspecialchars($endInputValue)
+            . '">';
+
+        echo '</td>';
+        echo '</tr>';
+
+        echo '<tr>';
+        echo '<td class="Bold">Reason for correction</td>';
+        echo '<td>';
+
+        echo '<textarea ';
+        echo 'name="correction_reason" ';
+        echo 'rows="3" required ';
+        echo 'placeholder="Explain why the session times need correcting">';
+        echo '</textarea>';
+
+        echo '</td>';
+        echo '</tr>';
+
+        echo '<tr>';
+        echo '<td colspan="2">';
+
+        echo '<input type="submit" ';
+        echo 'value="Save timing correction" ';
+        echo 'disabled>';
+
+        echo '<br><small>';
+        echo 'Saving is not yet enabled.';
+        echo '</small>';
+
+        echo '</td>';
+        echo '</tr>';
+    }
+
+    echo '</table>';
+
+    echo '</form>';
+
 include('Common/Templates/tail.php');

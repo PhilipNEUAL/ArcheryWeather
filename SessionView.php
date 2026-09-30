@@ -217,58 +217,43 @@ echo 'Direction reference';
 echo '</th>';
 echo '</tr>';
 
-echo '<tr>';
-echo '<td class="Bold">Recorded shooting bearing</td>';
-echo '<td>'
-    . (
-        $session['shooting_bearing'] !== null
-            ? resultspack_weather_format_number(
-                $session['shooting_bearing'],
-                1
-            ) . '°'
-            : 'Not recorded'
-    )
-    . '</td>';
-echo '</tr>';
+$effectiveShootingBearing =
+    resultspack_weather_effective_shooting_bearing(
+        $session
+    );
 
 echo '<tr>';
-echo '<td class="Bold">Direction correction</td>';
-echo '<td>'
-    . (
-        isset($session['direction_correction'])
-        && is_numeric($session['direction_correction'])
-            ? resultspack_weather_format_number(
-                $session['direction_correction'],
-                1
-            ) . '°'
-            : '0.0°'
-    )
-    . '</td>';
-echo '</tr>';
+echo '<td class="Bold">Shooting direction</td>';
+echo '<td>';
 
-echo '<tr>';
-echo '<td class="Bold">Effective shooting bearing</td>';
-echo '<td>'
-    . (
-        $effectiveShootingBearing !== null
-            ? resultspack_weather_format_number(
-                $effectiveShootingBearing,
-                1
-            ) . '°'
-            : 'Not available'
+if ($effectiveShootingBearing !== null) {
+    echo resultspack_weather_format_number(
+        $effectiveShootingBearing,
+        1
     )
-    . '</td>';
-echo '</tr>';
+        . '°';
 
-echo '<tr>';
-echo '<td class="Bold">Direction verification</td>';
-echo '<td>'
-    . htmlspecialchars(
-        resultspack_weather_direction_verification_label(
-            $session['direction_verification']
-        )
-    )
-    . '</td>';
+    echo ' — '
+        . htmlspecialchars(
+            resultspack_weather_direction_verification_label(
+                $session['direction_verification']
+            )
+        );
+} else {
+    echo 'Not recorded';
+}
+
+echo '<br>';
+
+echo '<a href="DirectionReference.php?session_id='
+    . (int) $session['id']
+    . '">';
+
+echo 'View or edit direction reference';
+
+echo '</a>';
+
+echo '</td>';
 echo '</tr>';
 
 echo '<tr>';

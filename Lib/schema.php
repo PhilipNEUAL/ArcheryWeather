@@ -10,7 +10,7 @@ function resultspack_weather_table_exists($tableName)
     return (bool) safe_fetch($result);
 }
 
-// Inspect the existing ResultsPack weather storage. This isy read-only for the time being.
+// Inspect the existing ResultsPack weather storage without modifying it.
 function resultspack_weather_existing_storage_status()
 {
     $tables = array(
@@ -64,10 +64,15 @@ function resultspack_weather_existing_storage_status()
 }
 
 // Create Sessions table.
-function archeryweather_ensure_sessions_table()
+function archeryweather_ensure_sessions_table($databaseName = null)
 {
     safe_w_sql(
-        "CREATE TABLE IF NOT EXISTS CustomArcheryWeatherSessions (" .
+        "CREATE TABLE IF NOT EXISTS " .
+        archeryweather_schema_table_name(
+            'CustomArcheryWeatherSessions',
+            $databaseName
+        ) .
+        " (" .
         "CrwsId int unsigned NOT NULL AUTO_INCREMENT," .
         "CrwsTournament int NOT NULL," .
         "CrwsStationId int NOT NULL," .
@@ -95,10 +100,15 @@ function archeryweather_ensure_sessions_table()
 }
 
 // Create Observations table.
-function archeryweather_ensure_observations_table()
+function archeryweather_ensure_observations_table($databaseName = null)
 {
     safe_w_sql(
-        "CREATE TABLE IF NOT EXISTS CustomArcheryWeatherObservations (" .
+        "CREATE TABLE IF NOT EXISTS " .
+        archeryweather_schema_table_name(
+            'CustomArcheryWeatherObservations',
+            $databaseName
+        ) .
+        " (" .
         "CrwoId int unsigned NOT NULL AUTO_INCREMENT," .
         "CrwoSession int unsigned NOT NULL," .
         "CrwoTimestamp bigint unsigned NOT NULL," .
@@ -129,10 +139,15 @@ function archeryweather_ensure_observations_table()
 }
 
 // Create Judge/Weather Events table.
-function archeryweather_ensure_events_table()
+function archeryweather_ensure_events_table($databaseName = null)
 {
     safe_w_sql(
-        "CREATE TABLE IF NOT EXISTS CustomArcheryWeatherEvents (" .
+        "CREATE TABLE IF NOT EXISTS " .
+        archeryweather_schema_table_name(
+            'CustomArcheryWeatherEvents',
+            $databaseName
+        ) .
+        " (" .
         "CrweId int unsigned NOT NULL AUTO_INCREMENT," .
         "CrweSession int unsigned NOT NULL," .
         "CrweTimestamp bigint unsigned NOT NULL," .
@@ -148,10 +163,15 @@ function archeryweather_ensure_events_table()
 }
 
 // Create Timing Corrections audit table.
-function archeryweather_ensure_timing_corrections_table()
+function archeryweather_ensure_timing_corrections_table($databaseName = null)
 {
     safe_w_sql(
-        "CREATE TABLE IF NOT EXISTS CustomArcheryWeatherTimingCorrections (" .
+        "CREATE TABLE IF NOT EXISTS " .
+        archeryweather_schema_table_name(
+            'CustomArcheryWeatherTimingCorrections',
+            $databaseName
+        ) .
+        " (" .
         "CrwtcId int unsigned NOT NULL AUTO_INCREMENT," .
         "CrwtcSession int unsigned NOT NULL," .
         "CrwtcOldStartedEpoch bigint unsigned NOT NULL," .
@@ -169,10 +189,15 @@ function archeryweather_ensure_timing_corrections_table()
 }
 
 // Create Direction Corrections audit table.
-function archeryweather_ensure_direction_corrections_table()
+function archeryweather_ensure_direction_corrections_table($databaseName = null)
 {
     safe_w_sql(
-        "CREATE TABLE IF NOT EXISTS CustomArcheryWeatherDirectionCorrections (" .
+        "CREATE TABLE IF NOT EXISTS " .
+        archeryweather_schema_table_name(
+            'CustomArcheryWeatherDirectionCorrections',
+            $databaseName
+        ) .
+        " (" .
         "CrwdcId int unsigned NOT NULL AUTO_INCREMENT," .
         "CrwdcSession int unsigned NOT NULL," .
         "CrwdcOldCorrection decimal(6,2) NOT NULL DEFAULT 0.00," .
@@ -190,20 +215,64 @@ function archeryweather_ensure_direction_corrections_table()
 }
 
 // Initialise all database tables.
-function archeryweather_ensure_schema()
+function archeryweather_ensure_schema($databaseName = null)
 {
     // Weather session records.
-    archeryweather_ensure_sessions_table();
+    archeryweather_ensure_sessions_table($databaseName);
 
     // Environmental observations.
-    archeryweather_ensure_observations_table();
+    archeryweather_ensure_observations_table($databaseName);
 
     // Judge decisions and weather-related events.
-    archeryweather_ensure_events_table();
+    archeryweather_ensure_events_table($databaseName);
 
     // Session timing correction audit history.
-    archeryweather_ensure_timing_corrections_table();
+    archeryweather_ensure_timing_corrections_table($databaseName);
 
     // Shooting direction correction audit history.
-    archeryweather_ensure_direction_corrections_table();
+    archeryweather_ensure_direction_corrections_table($databaseName);
+}
+
+// Build a safe table reference for ArcheryWeather.
+//
+// Normally uses IANSEO's current database.
+// An optional database name allows isolated installation testing.
+//
+// Only recognised ArcheryWeather tables are permitted.
+
+function archeryweather_schema_table_name(
+    $tableName,
+    $databaseName = null
+) {
+    $allowedTables = array(
+        'CustomArcheryWeatherSessions',
+        'CustomArcheryWeatherObservations',
+        'CustomArcheryWeatherEvents',
+        'CustomArcheryWeatherTimingCorrections',
+        'CustomArcheryWeatherDirectionCorrections',
+    );
+
+    if (!in_array($tableName, $allowedTables, true)) {
+        throw new InvalidArgumentException(
+            'Unrecognised ArcheryWeather table.'
+        );
+    }
+
+    // Normal installation: use the current IANSEO database.
+    if ($databaseName === null) {
+        return '`' . $tableName . '`';
+    }
+
+    // Database names cannot be supplied as SQL parameters.
+    // Validate the identifier before including it in SQL.
+    if (
+        !is_string($databaseName)
+        || !preg_match('/^[A-Za-z0-9_]+$/D', $databaseName)
+    ) {
+        throw new InvalidArgumentException(
+            'Invalid database name.'
+        );
+    }
+
+    return '`' . $databaseName . '`.`' . $tableName . '`';
 }

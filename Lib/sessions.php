@@ -20,7 +20,7 @@ function resultspack_weather_get_sessions()
 {
     if (
         !resultspack_weather_table_exists(
-            'CustomResultsPackWeatherSessions'
+            'CustomArcheryWeatherSessions'
         )
     ) {
         return array();
@@ -46,7 +46,7 @@ function resultspack_weather_get_sessions()
             CrwsExposure,
             CrwsPositionNotes,
             CrwsResearchStatus
-        FROM CustomResultsPackWeatherSessions
+        FROM CustomArcheryWeatherSessions
         ORDER BY CrwsStartedEpoch DESC"
     );
 

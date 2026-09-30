@@ -11,7 +11,7 @@ function resultspack_weather_count_observations($sessionId)
 
     if (
         !resultspack_weather_table_exists(
-            'CustomResultsPackWeatherObservations'
+            'CustomArcheryWeatherObservations'
         )
     ) {
         return 0;
@@ -35,7 +35,7 @@ function resultspack_weather_count_observations($sessionId)
 
     $result = safe_r_sql(
         "SELECT COUNT(*) AS ObservationCount
-        FROM CustomResultsPackWeatherObservations
+        FROM CustomArcheryWeatherObservations
         WHERE " . $where
     );
 
@@ -57,7 +57,7 @@ function resultspack_weather_get_observations($sessionId)
 
     if (
         !resultspack_weather_table_exists(
-            'CustomResultsPackWeatherObservations'
+            'CustomArcheryWeatherObservations'
         )
     ) {
         return array();
@@ -99,7 +99,7 @@ function resultspack_weather_get_observations($sessionId)
             CrwoPrecipType,
             CrwoStrikeCount,
             CrwoStrikeDistance
-        FROM CustomResultsPackWeatherObservations
+        FROM CustomArcheryWeatherObservations
         WHERE " . $where . "
         ORDER BY CrwoTimestamp ASC"
     );
@@ -212,7 +212,7 @@ function resultspack_weather_get_observation_timestamps($sessionId)
 
     if (
         !resultspack_weather_table_exists(
-            'CustomResultsPackWeatherObservations'
+            'CustomArcheryWeatherObservations'
         )
     ) {
         return array();
@@ -236,7 +236,7 @@ function resultspack_weather_get_observation_timestamps($sessionId)
 
     $result = safe_r_sql(
         "SELECT CrwoTimestamp
-        FROM CustomResultsPackWeatherObservations
+        FROM CustomArcheryWeatherObservations
         WHERE " . $where . "
         ORDER BY CrwoTimestamp ASC"
     );

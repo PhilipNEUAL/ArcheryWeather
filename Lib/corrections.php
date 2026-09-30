@@ -11,7 +11,7 @@ function resultspack_weather_get_timing_corrections($sessionId)
 
     if (
         !resultspack_weather_table_exists(
-            'CustomResultsPackWeatherTimingCorrections'
+            'CustomArcheryWeatherTimingCorrections'
         )
     ) {
         return array();
@@ -28,7 +28,7 @@ function resultspack_weather_get_timing_corrections($sessionId)
             CrwtcTimezone,
             CrwtcReason,
             CrwtcCreated
-        FROM CustomResultsPackWeatherTimingCorrections
+        FROM CustomArcheryWeatherTimingCorrections
         WHERE CrwtcSession=" . $sessionId . "
         ORDER BY CrwtcId DESC"
     );
@@ -81,7 +81,7 @@ function resultspack_weather_get_direction_corrections($sessionId)
 
     if (
         !resultspack_weather_table_exists(
-            'CustomResultsPackWeatherDirectionCorrections'
+            'CustomArcheryWeatherDirectionCorrections'
         )
     ) {
         return array();
@@ -98,7 +98,7 @@ function resultspack_weather_get_direction_corrections($sessionId)
             CrwdcVerification,
             CrwdcReason,
             CrwdcCreated
-        FROM CustomResultsPackWeatherDirectionCorrections
+        FROM CustomArcheryWeatherDirectionCorrections
         WHERE CrwdcSession=" . $sessionId . "
         ORDER BY CrwdcId DESC"
     );

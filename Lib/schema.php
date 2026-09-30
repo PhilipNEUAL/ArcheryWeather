@@ -1,5 +1,37 @@
 <?php
 
+// Run a schema query and explain missing installation permissions.
+function archeryweather_schema_execute($sql)
+{
+    $permissionErrors = array(1044, 1142, 1143);
+
+    $permissionMessage =
+        'ArcheryWeather could not initialise its database tables. ' .
+        'Ask your IANSEO database administrator to check that the ' .
+        'configured database account has CREATE permission on the ' .
+        'IANSEO database, then reload this page.';
+
+    try {
+        $result = safe_w_sql(
+            $sql,
+            false,
+            array_merge(array(0), $permissionErrors)
+        );
+    } catch (mysqli_sql_exception $exception) {
+        if (in_array((int) $exception->getCode(), $permissionErrors, true)) {
+            throw new RuntimeException($permissionMessage);
+        }
+
+        throw $exception;
+    }
+
+    if ($result === false) {
+        throw new RuntimeException($permissionMessage);
+    }
+
+    return $result;
+}
+
 // Check whether a table already exists in the current IANSEO database.
 function resultspack_weather_table_exists($tableName)
 {
@@ -10,24 +42,24 @@ function resultspack_weather_table_exists($tableName)
     return (bool) safe_fetch($result);
 }
 
-// Inspect the existing ResultsPack weather storage without modifying it.
+// Inspect ArcheryWeather storage without modifying it.
 function resultspack_weather_existing_storage_status()
 {
     $tables = array(
         'sessions' =>
-            'CustomResultsPackWeatherSessions',
+            'CustomArcheryWeatherSessions',
 
         'observations' =>
-            'CustomResultsPackWeatherObservations',
+            'CustomArcheryWeatherObservations',
 
         'events' =>
-            'CustomResultsPackWeatherEvents',
+            'CustomArcheryWeatherEvents',
 
         'timing_corrections' =>
-            'CustomResultsPackWeatherTimingCorrections',
+            'CustomArcheryWeatherTimingCorrections',
 
         'direction_corrections' =>
-            'CustomResultsPackWeatherDirectionCorrections',
+            'CustomArcheryWeatherDirectionCorrections',
     );
 
     $status = array();
@@ -66,7 +98,7 @@ function resultspack_weather_existing_storage_status()
 // Create Sessions table.
 function archeryweather_ensure_sessions_table($databaseName = null)
 {
-    safe_w_sql(
+    archeryweather_schema_execute(
         "CREATE TABLE IF NOT EXISTS " .
         archeryweather_schema_table_name(
             'CustomArcheryWeatherSessions',
@@ -102,7 +134,7 @@ function archeryweather_ensure_sessions_table($databaseName = null)
 // Create Observations table.
 function archeryweather_ensure_observations_table($databaseName = null)
 {
-    safe_w_sql(
+    archeryweather_schema_execute(
         "CREATE TABLE IF NOT EXISTS " .
         archeryweather_schema_table_name(
             'CustomArcheryWeatherObservations',
@@ -141,7 +173,7 @@ function archeryweather_ensure_observations_table($databaseName = null)
 // Create Judge/Weather Events table.
 function archeryweather_ensure_events_table($databaseName = null)
 {
-    safe_w_sql(
+    archeryweather_schema_execute(
         "CREATE TABLE IF NOT EXISTS " .
         archeryweather_schema_table_name(
             'CustomArcheryWeatherEvents',
@@ -165,7 +197,7 @@ function archeryweather_ensure_events_table($databaseName = null)
 // Create Timing Corrections audit table.
 function archeryweather_ensure_timing_corrections_table($databaseName = null)
 {
-    safe_w_sql(
+    archeryweather_schema_execute(
         "CREATE TABLE IF NOT EXISTS " .
         archeryweather_schema_table_name(
             'CustomArcheryWeatherTimingCorrections',
@@ -191,7 +223,7 @@ function archeryweather_ensure_timing_corrections_table($databaseName = null)
 // Create Direction Corrections audit table.
 function archeryweather_ensure_direction_corrections_table($databaseName = null)
 {
-    safe_w_sql(
+    archeryweather_schema_execute(
         "CREATE TABLE IF NOT EXISTS " .
         archeryweather_schema_table_name(
             'CustomArcheryWeatherDirectionCorrections',

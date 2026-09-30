@@ -11,7 +11,7 @@ function resultspack_weather_get_events($sessionId)
 
     if (
         !resultspack_weather_table_exists(
-            'CustomResultsPackWeatherEvents'
+            'CustomArcheryWeatherEvents'
         )
     ) {
         return array();
@@ -24,7 +24,7 @@ function resultspack_weather_get_events($sessionId)
             CrweAction,
             CrweReason,
             CrweNote
-        FROM CustomResultsPackWeatherEvents
+        FROM CustomArcheryWeatherEvents
         WHERE CrweSession=" . $sessionId . "
         ORDER BY CrweTimestamp ASC, CrweId ASC"
     );

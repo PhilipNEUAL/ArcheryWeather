@@ -252,6 +252,8 @@ include('Common/Templates/head.php');
 
     echo '</table>';
 
+    echo '<p><a href="NewSession.php">Create a Test weather session</a></p>';
+
 // Weather session reading test
     $weatherSessions =
         resultspack_weather_get_sessions();
@@ -302,9 +304,11 @@ include('Common/Templates/head.php');
 
         echo '<tr>';
 
-        echo '<td>'
+        echo '<td><a href="WeatherSessionView.php?session='
             . (int) $session['id']
-            . '</td>';
+            . '">'
+            . (int) $session['id']
+            . '</a></td>';
 
         echo '<td>'
             . htmlspecialchars($competitionName)

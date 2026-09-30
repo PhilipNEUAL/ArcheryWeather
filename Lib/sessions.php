@@ -171,3 +171,88 @@ function resultspack_weather_get_completed_session($sessionId)
 
     return $session;
 }
+
+// Create a new Test session starting now.
+// Returns the new session ID.
+function resultspack_weather_create_session(
+    $tournamentId,
+    $stationId,
+    $stationName = ''
+) {
+    $tournamentId = filter_var(
+        $tournamentId,
+        FILTER_VALIDATE_INT,
+        array('options' => array('min_range' => 1))
+    );
+
+    $stationId = filter_var(
+        $stationId,
+        FILTER_VALIDATE_INT,
+        array('options' => array('min_range' => 1))
+    );
+
+    if ($tournamentId === false || $stationId === false) {
+        throw new InvalidArgumentException(
+            'A valid competition and weather station are required.'
+        );
+    }
+
+    // Confirm that the selected competition exists.
+    $competitionFound = false;
+
+    foreach (resultspack_weather_fetch_tournament_list() as $tournament) {
+        if ((int) $tournament['id'] === $tournamentId) {
+            $competitionFound = true;
+            break;
+        }
+    }
+
+    if (!$competitionFound) {
+        throw new InvalidArgumentException(
+            'The selected competition could not be found.'
+        );
+    }
+
+    $stationName = trim((string) $stationName);
+
+    if (strlen($stationName) > 255) {
+        throw new InvalidArgumentException(
+            'The weather station name is too long.'
+        );
+    }
+
+    $startedEpoch = time();
+    $timezone = resultspack_weather_timezone();
+
+    $result = safe_w_sql(
+        "INSERT INTO CustomArcheryWeatherSessions (" .
+            "CrwsTournament, " .
+            "CrwsStationId, " .
+            "CrwsStationName, " .
+            "CrwsStartedEpoch, " .
+            "CrwsTimezone, " .
+            "CrwsPositionNotes, " .
+            "CrwsResearchStatus, " .
+            "CrwsCreated" .
+        ") VALUES (" .
+            $tournamentId . ", " .
+            $stationId . ", " .
+            StrSafe_DB($stationName) . ", " .
+            $startedEpoch . ", " .
+            StrSafe_DB($timezone) . ", " .
+            StrSafe_DB('') . ", " .
+            StrSafe_DB('test') . ", " .
+            StrSafe_DB(gmdate('Y-m-d H:i:s', $startedEpoch)) .
+        ")"
+    );
+
+    if ($result === false) {
+        throw new RuntimeException(
+            'The weather session could not be created.'
+        );
+    }
+
+    global $WRIT_CON;
+
+    return (int) mysqli_insert_id($WRIT_CON);
+}

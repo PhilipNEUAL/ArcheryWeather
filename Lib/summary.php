@@ -72,3 +72,168 @@ function resultspack_weather_circular_mean(array $directions)
         $degrees
     );
 }
+
+// Summarise the environmental readings. Stored wind values are mph; convert to ms for display.
+function resultspack_weather_environmental_summary(array $observations)
+{
+    $windValues = array();
+    $gustValues = array();
+
+    foreach ($observations as $observation) {
+        $wind = $observation['wind_avg'] ?? null;
+        $gust = $observation['wind_gust'] ?? null;
+
+        if ($wind !== null && is_numeric($wind)) {
+            $windValues[] = (float) $wind * 0.44704;
+        }
+
+        if ($gust !== null && is_numeric($gust)) {
+            $gustValues[] = (float) $gust * 0.44704;
+        }
+    }
+
+    return array(
+        'wind' => resultspack_weather_numeric_summary($windValues),
+        'gust' => resultspack_weather_numeric_summary($gustValues),
+        'temperature' => resultspack_weather_numeric_summary(
+            array_column($observations, 'air_temp')
+        ),
+        'humidity' => resultspack_weather_numeric_summary(
+            array_column($observations, 'humidity')
+        ),
+        'station_pressure' => resultspack_weather_numeric_summary(
+            array_column($observations, 'station_pressure')
+        ),
+        'sea_level_pressure' => resultspack_weather_numeric_summary(
+            array_column($observations, 'sea_level_pressure')
+        ),
+        'solar_radiation' => resultspack_weather_numeric_summary(
+            array_column($observations, 'solar_radiation')
+        ),
+        'illuminance' => resultspack_weather_numeric_summary(
+            array_column($observations, 'illuminance')
+        ),
+        'uv' => resultspack_weather_numeric_summary(
+            array_column($observations, 'uv')
+        ),
+        'rain' => resultspack_weather_numeric_summary(
+            array_column($observations, 'precip_accumulation')
+        ),
+        'lightning' => resultspack_weather_numeric_summary(
+            array_column($observations, 'strike_count')
+        ),
+    );
+}
+
+// Find the peak-gust time and corrected prevailing wind direction.
+function resultspack_weather_wind_context(
+    array $observations,
+    array $session
+) {
+    $maximumGust = null;
+    $gustTimestamp = null;
+    $sinSum = 0.0;
+    $cosSum = 0.0;
+    $directionCount = 0;
+    $relativeCounts = array();
+    $shootingBearing = resultspack_weather_effective_shooting_bearing($session);
+
+    foreach ($observations as $observation) {
+        $gust = $observation['wind_gust'] ?? null;
+        $timestamp = (int) ($observation['timestamp'] ?? 0);
+
+        if ($gust !== null && is_numeric($gust)) {
+            $gust = (float) $gust;
+
+            if ($maximumGust === null || $gust > $maximumGust) {
+                $maximumGust = $gust;
+                $gustTimestamp = $timestamp > 0 ? $timestamp : null;
+            } elseif (
+                $gust === $maximumGust
+                && $timestamp > 0
+                && ($gustTimestamp === null || $timestamp < $gustTimestamp)
+            ) {
+                // If the maximum repeats, show its earliest recorded time.
+                $gustTimestamp = $timestamp;
+            }
+        }
+
+        $rawDirection = $observation['wind_dir'] ?? null;
+
+        if ($rawDirection === null || !is_numeric($rawDirection)) {
+            continue;
+        }
+
+        $direction = resultspack_weather_effective_wind_direction(
+            (float) $rawDirection,
+            $session
+        );
+
+        if ($direction === null) {
+            continue;
+        }
+
+        $radians = deg2rad($direction);
+        $sinSum += sin($radians);
+        $cosSum += cos($radians);
+        $directionCount++;
+        if ($shootingBearing !== null) {
+            $relative = resultspack_weather_relative_wind(
+                $direction,
+                $shootingBearing
+            );
+
+            if ($relative !== null) {
+                $label = $relative['label'];
+
+                $relativeCounts[$label] =
+                    ($relativeCounts[$label] ?? 0) + 1;
+            }
+        }
+    }
+
+    $prevailingDirection = null;
+    $concentration = null;
+
+    if ($directionCount > 0) {
+        $meanSin = $sinSum / $directionCount;
+        $meanCos = $cosSum / $directionCount;
+
+        $concentration = sqrt(
+            $meanSin * $meanSin + $meanCos * $meanCos
+        );
+
+        if ($concentration >= 0.10) {
+            $prevailingDirection = fmod(
+                rad2deg(atan2($meanSin, $meanCos)) + 360,
+                360
+            );
+        }
+    }
+
+    $relativeLeaders = array();
+    $relativePercent = null;
+
+    if ($relativeCounts) {
+        $highestCount = max($relativeCounts);
+        $relativeTotal = array_sum($relativeCounts);
+
+        foreach ($relativeCounts as $label => $count) {
+            if ($count === $highestCount) {
+                $relativeLeaders[] = $label;
+            }
+        }
+
+        $relativePercent = 100 * $highestCount / $relativeTotal;
+    }
+
+    return array(
+        'gust_timestamp' => $gustTimestamp,
+        'direction_count' => $directionCount,
+        'prevailing_direction' => $prevailingDirection,
+        'direction_concentration' => $concentration,
+        'shooting_bearing' => $shootingBearing,
+        'relative_leaders' => $relativeLeaders,
+        'relative_percent' => $relativePercent,
+    );
+}

@@ -172,13 +172,20 @@ function resultspack_weather_get_completed_session($sessionId)
     return $session;
 }
 
-// Create a new Test session starting now.
+// Create a weather session starting now.
+// Existing callers default to Test.
 // Returns the new session ID.
 function resultspack_weather_create_session(
     $tournamentId,
     $stationId,
-    $stationName = ''
+    $stationName = '',
+    $researchStatus = 'test'
 ) {
+    if (!in_array($researchStatus, array('real', 'test'), true)) {
+        throw new InvalidArgumentException(
+            'Please choose Real or Test for the new session.'
+        );
+    }
     $tournamentId = filter_var(
         $tournamentId,
         FILTER_VALIDATE_INT,
@@ -241,7 +248,7 @@ function resultspack_weather_create_session(
             $startedEpoch . ", " .
             StrSafe_DB($timezone) . ", " .
             StrSafe_DB('') . ", " .
-            StrSafe_DB('test') . ", " .
+            StrSafe_DB($researchStatus) . ", " .
             StrSafe_DB(gmdate('Y-m-d H:i:s', $startedEpoch)) .
         ")"
     );

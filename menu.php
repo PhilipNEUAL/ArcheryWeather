@@ -5,14 +5,14 @@ if (!isset($ret['ARCHERYWEATHER'])) {
 }
 
 $ret['ARCHERYWEATHER'][] =
-    'Weather sessions|'
-    . $CFG->ROOT_DIR
-    . 'Modules/Custom/ArcheryWeather/Sessions.php';
-
-$ret['ARCHERYWEATHER'][] =
-    'Create a Test weather session|'
+    'New session|'
     . $CFG->ROOT_DIR
     . 'Modules/Custom/ArcheryWeather/NewSession.php';
+
+$ret['ARCHERYWEATHER'][] =
+    'View sessions|'
+    . $CFG->ROOT_DIR
+    . 'Modules/Custom/ArcheryWeather/Sessions.php';
 
 $ret['ARCHERYWEATHER'][] =
     'Diagnostics|'

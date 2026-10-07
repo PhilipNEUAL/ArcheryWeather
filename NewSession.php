@@ -81,6 +81,8 @@ $createdSessionId = (int) (
 );
 unset($_SESSION['archeryweather_created_session']);
 
+$researchStatus = 'test';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $submittedToken = $_POST['form_token'] ?? '';
 
@@ -96,6 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($error === '') {
         $tournamentInput = $_POST['tournament_id'] ?? '';
         $stationInput = $_POST['station_id'] ?? '';
+
+        $researchStatus = $_POST['research_status'] ?? '';
+
+        if (!is_string($researchStatus)) {
+            $researchStatus = '';
+        }
 
         $tournamentId = is_string($tournamentInput)
             ? filter_var(
@@ -127,7 +135,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $newSessionId = resultspack_weather_create_session(
                     $tournamentId,
                     $stationId,
-                    $stations[$stationId]
+                    $stations[$stationId],
+                    $researchStatus
                 );
 
                 // Consume the token only after successful creation.
@@ -158,12 +167,12 @@ include('Common/Templates/head.php');
 <?php if ($createdSessionId > 0): ?>
     <p>
         <strong>
-            Test session #<?php echo $createdSessionId; ?> created.
+            Weather session #<?php echo $createdSessionId; ?> created.
         </strong>
         Its start time has been recorded. Observation collection
         has not started yet.
 
-        <a href="WeatherSessionView.php?session=<?php
+        <a href="SessionView.php?session_id=<?php
             echo (int) $createdSessionId;
         ?>">View this session</a>
     </p>
@@ -236,8 +245,32 @@ include('Common/Templates/head.php');
     </tr>
 
     <tr>
-        <td>Session type</td>
-        <td>Test</td>
+        <td>
+            <label for="research_status">Session type</label>
+        </td>
+        <td>
+            <select
+                id="research_status"
+                name="research_status"
+                required
+            >
+                <option value="test"<?php
+                    echo $researchStatus === 'test'
+                        ? ' selected'
+                        : '';
+                ?>>Test</option>
+
+                <option value="real"<?php
+                    echo $researchStatus === 'real'
+                        ? ' selected'
+                        : '';
+                ?>>Real</option>
+            </select>
+
+            <p>
+                Choose Real for competitions. Choose Test for development.
+            </p>
+        </td>
     </tr>
 
     <tr>
@@ -257,12 +290,10 @@ include('Common/Templates/head.php');
             type="submit"
             <?php echo (!$tournaments || !$stations) ? 'disabled' : ''; ?>
         >
-            Create Test session starting now
+            Create session starting now
         </button>
     </p>
 </form>
-
-<p><a href="index.php">Return to ArcheryWeather</a></p>
 
 <?php
 

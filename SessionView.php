@@ -171,13 +171,6 @@ echo '<td>'
 echo '</tr>';
 
 echo '<tr>';
-echo '<td class="Bold">Ended</td>';
-echo '<td>'
-    . htmlspecialchars($endedLabel)
-    . '</td>';
-echo '</tr>';
-
-echo '<tr>';
 echo '<td class="Bold">Duration</td>';
 echo '<td>';
 

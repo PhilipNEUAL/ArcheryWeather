@@ -378,6 +378,9 @@ echo '<tr>';
 echo '<td class="Bold">Observations stored</td>';
 echo '<td>'
     . count($observations)
+    . ' — <a href="SessionObservations.php?session_id='
+    . (int) $session['id']
+    . '">View minute-by-minute observations ↗</a>'
     . '</td>';
 echo '</tr>';
 

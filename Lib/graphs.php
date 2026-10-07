@@ -1,5 +1,66 @@
 <?php
 
+// Split observations into continuous sections.
+// Missing values or gaps over 90 seconds break a section.
+function resultspack_weather_graph_segments(
+    array $observations,
+    array $requiredFields,
+    $maximumGapSeconds = 90
+) {
+    // Work on a sorted copy.
+    usort($observations, function ($a, $b) {
+        return (int) ($a['timestamp'] ?? 0)
+            <=> (int) ($b['timestamp'] ?? 0);
+    });
+
+    $segments = array();
+    $current = array();
+    $previousTimestamp = null;
+
+    foreach ($observations as $observation) {
+        $timestamp = (int) ($observation['timestamp'] ?? 0);
+        $valid = $timestamp > 0;
+
+        foreach ($requiredFields as $field) {
+            if (
+                !isset($observation[$field])
+                || !is_numeric($observation[$field])
+            ) {
+                $valid = false;
+                break;
+            }
+        }
+
+        $timeBreak = $previousTimestamp !== null
+            && (
+                $timestamp <= $previousTimestamp
+                || $timestamp - $previousTimestamp > $maximumGapSeconds
+            );
+
+        if (!$valid || $timeBreak) {
+            if ($current) {
+                $segments[] = $current;
+                $current = array();
+            }
+
+            $previousTimestamp = null;
+        }
+
+        if (!$valid) {
+            continue;
+        }
+
+        $current[] = $observation;
+        $previousTimestamp = $timestamp;
+    }
+
+    if ($current) {
+        $segments[] = $current;
+    }
+
+    return $segments;
+}
+
 function resultspack_weather_render_wind_graph(
     array $observations,
     array $events,

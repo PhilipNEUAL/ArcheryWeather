@@ -432,14 +432,18 @@ resultspack_weather_render_wind_graph(
     $session
 );
 
-echo '<p><a href="DownloadWindGraph.php?session_id='
+echo '<p><a href="DownloadGraph.php?session_id='
     . (int) $session['id']
-    . '">Download wind graph (SVG)</a></p>';
+    . '&amp;graph=wind">Download wind graph (SVG)</a></p>';
 
 resultspack_weather_viewer_render_wind_rose(
     $observations,
     $session
 );
+
+echo '<p><a href="DownloadGraph.php?session_id='
+    . (int) $session['id']
+    . '&amp;graph=compass">Download wind compass (SVG)</a></p>';
 
 echo '<details style="margin-top:20px">';
 echo '<summary style="cursor:pointer;font-weight:bold;padding:10px">';
@@ -481,6 +485,13 @@ foreach ($environmentGraphs as $graph) {
         $graph[6],
         $graph[7]
     );
+
+    echo '<p><a href="DownloadGraph.php?session_id='
+    . (int) $session['id']
+    . '&amp;graph=' . rawurlencode($graph[1])
+    . '">Download '
+    . htmlspecialchars($graph[0], ENT_QUOTES, 'UTF-8')
+    . ' graph (SVG)</a></p>';
 }
 
 echo '</details>';

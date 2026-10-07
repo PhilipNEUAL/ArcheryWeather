@@ -496,4 +496,6 @@ foreach ($environmentGraphs as $graph) {
 
 echo '</details>';
 
+echo '<script src="Js/graph_download.js" defer></script>';
+
 include('Common/Templates/tail.php');

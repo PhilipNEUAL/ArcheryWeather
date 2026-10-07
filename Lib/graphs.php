@@ -193,112 +193,101 @@ if (count($windObservations) < 2) {
             * $yTickInterval
         );
 
-    /*
-     * Build:
-     * - the upper and lower edges of the lull-to-gust envelope;
-     * - a centred five-observation moving average of the minute averages.
-     *
-     * With the Tempest one-minute data this is effectively a five-minute
-     * smoothed average for normal sessions.
-     */
-    $gustBoundaryPoints = array();
-    $lullBoundaryPoints = array();
-    $bandUpperPoints = array();
-    $bandLowerPoints = array();
-    $smoothedAveragePoints = array();
+    // Convert timestamp and speed into an SVG coordinate.
+    $graphPoint = function ($timestamp, $value) use (
+        $marginLeft,
+        $marginTop,
+        $plotWidth,
+        $plotHeight,
+        $firstTimestamp,
+        $timeRange,
+        $yMaximum
+    ) {
+        $x = $marginLeft
+            + (($timestamp - $firstTimestamp) / $timeRange)
+            * $plotWidth;
 
-    foreach ($windSeries as $index => $point) {
-        $x =
-            $marginLeft
-            + (
-                (($point['timestamp'] - $firstTimestamp) / $timeRange)
-                * $plotWidth
+        $y = $marginTop + $plotHeight
+            - ($value / $yMaximum) * $plotHeight;
+
+        return round($x, 2) . ',' . round($y, 2);
+    };
+
+    // Build each line independently, preserving gaps in its own readings.
+    $lineSections = array();
+
+    foreach (array('gust_ms', 'lull_ms', 'average_ms') as $field) {
+        $lineSections[$field] = array();
+
+        $segments = resultspack_weather_graph_segments(
+            $windSeries,
+            array($field)
+        );
+
+        foreach ($segments as $segment) {
+            $points = array();
+            $segmentCount = count($segment);
+
+            foreach ($segment as $index => $point) {
+                $value = (float) $point[$field];
+
+                if ($field === 'average_ms') {
+                    // Smooth only within this continuous section.
+                    $windowStart = max(0, $index - 2);
+                    $windowEnd = min($segmentCount - 1, $index + 2);
+                    $total = 0.0;
+                    $count = 0;
+
+                    for ($i = $windowStart; $i <= $windowEnd; $i++) {
+                        $total += (float) $segment[$i][$field];
+                        $count++;
+                    }
+
+                    $value = $total / $count;
+                }
+
+                $points[] = $graphPoint(
+                    $point['timestamp'],
+                    $value
+                );
+            }
+
+            $lineSections[$field][] = $points;
+        }
+    }
+
+    // A shaded section requires both lull and gust readings.
+    $bandSections = array();
+
+    $bandSegments = resultspack_weather_graph_segments(
+        $windSeries,
+        array('lull_ms', 'gust_ms')
+    );
+
+    foreach ($bandSegments as $segment) {
+        if (count($segment) < 2) {
+            continue;
+        }
+
+        $upper = array();
+        $lower = array();
+
+        foreach ($segment as $point) {
+            $upper[] = $graphPoint(
+                $point['timestamp'],
+                $point['gust_ms']
             );
 
-        if ($point['gust_ms'] !== null) {
-            $gustY =
-                $marginTop
-                + $plotHeight
-                - (
-                    ($point['gust_ms'] / $yMaximum)
-                    * $plotHeight
-                );
-
-            $gustPoint =
-                round($x, 2) . ',' . round($gustY, 2);
-
-            $gustBoundaryPoints[] =
-                $gustPoint;
-
-            if ($point['lull_ms'] !== null) {
-                $bandUpperPoints[] =
-                    $gustPoint;
-            }
+            $lower[] = $graphPoint(
+                $point['timestamp'],
+                $point['lull_ms']
+            );
         }
 
-        if ($point['lull_ms'] !== null) {
-            $lullY =
-                $marginTop
-                + $plotHeight
-                - (
-                    ($point['lull_ms'] / $yMaximum)
-                    * $plotHeight
-                );
-
-            $lullPoint =
-                round($x, 2) . ',' . round($lullY, 2);
-
-            $lullBoundaryPoints[] =
-                $lullPoint;
-
-            if ($point['gust_ms'] !== null) {
-                $bandLowerPoints[] =
-                    $lullPoint;
-            }
-        }
-
-        //Centred five-point moving average: two readings either side.
-        if ($point['average_ms'] !== null) {
-            $windowStart =
-                max(0, $index - 2);
-
-            $windowEnd =
-                min(count($windSeries) - 1, $index + 2);
-
-            $windowTotal = 0.0;
-            $windowCount = 0;
-
-            for (
-                $windowIndex = $windowStart;
-                $windowIndex <= $windowEnd;
-                $windowIndex++
-            ) {
-                if ($windSeries[$windowIndex]['average_ms'] !== null) {
-                    $windowTotal +=
-                        $windSeries[$windowIndex]['average_ms'];
-
-                    $windowCount++;
-                }
-            }
-
-            if ($windowCount > 0) {
-                $smoothedAverage =
-                    $windowTotal / $windowCount;
-
-                $smoothedY =
-                    $marginTop
-                    + $plotHeight
-                    - (
-                        ($smoothedAverage / $yMaximum)
-                        * $plotHeight
-                    );
-
-                $smoothedAveragePoints[] =
-                    round($x, 2)
-                    . ','
-                    . round($smoothedY, 2);
-            }
-        }
+        $bandSections[] = array_merge(
+            $upper,
+            array_reverse($lower)
+        );
     }
 
     echo '<div style="max-width:1100px">';
@@ -481,58 +470,58 @@ if (count($windObservations) < 2) {
             . '</text>';
     }
 
-    /*
-     * Draw the lull-to-gust envelope first so the smoothed average remains
-     * clearly visible on top.
-     */
-    if (
-        count($bandUpperPoints) >= 2
-        && count($bandLowerPoints) >= 2
-    ) {
-        $bandPoints =
-            array_merge(
-                $bandUpperPoints,
-                array_reverse($bandLowerPoints)
-            );
-
+    // Draw each continuous shaded section separately.
+    foreach ($bandSections as $points) {
         echo '<polygon '
-            . 'points="' . implode(' ', $bandPoints) . '" '
+            . 'points="' . implode(' ', $points) . '" '
             . 'fill="#90caf9" '
             . 'fill-opacity="0.30" '
             . 'stroke="none" />';
     }
 
-    //Subtle boundary lines make the top (gust) and bottom (lull) of the band clear.
-    if ($gustBoundaryPoints) {
-        echo '<polyline '
-            . 'points="' . implode(' ', $gustBoundaryPoints) . '" '
-            . 'fill="none" '
-            . 'stroke="#c62828" '
-            . 'stroke-width="1.5" '
-            . 'stroke-opacity="0.75" '
-            . 'stroke-linejoin="round" '
-            . 'stroke-linecap="round" />';
-    }
+    $lineStyles = array(
+        'gust_ms' => array(
+            'colour' => '#c62828',
+            'width' => 1.5,
+            'opacity' => 0.75,
+        ),
+        'lull_ms' => array(
+            'colour' => '#607d8b',
+            'width' => 1.5,
+            'opacity' => 0.75,
+        ),
+        'average_ms' => array(
+            'colour' => '#1565c0',
+            'width' => 3.5,
+            'opacity' => 1,
+        ),
+    );
 
-    if ($lullBoundaryPoints) {
-        echo '<polyline '
-            . 'points="' . implode(' ', $lullBoundaryPoints) . '" '
-            . 'fill="none" '
-            . 'stroke="#607d8b" '
-            . 'stroke-width="1.5" '
-            . 'stroke-opacity="0.75" '
-            . 'stroke-linejoin="round" '
-            . 'stroke-linecap="round" />';
-    }
+    foreach ($lineStyles as $field => $style) {
+        foreach ($lineSections[$field] as $points) {
+            if (count($points) === 1) {
+                // Keep isolated readings visible as dots.
+                list($pointX, $pointY) = explode(',', $points[0]);
 
-    if ($smoothedAveragePoints) {
-        echo '<polyline '
-            . 'points="' . implode(' ', $smoothedAveragePoints) . '" '
-            . 'fill="none" '
-            . 'stroke="#1565c0" '
-            . 'stroke-width="3.5" '
-            . 'stroke-linejoin="round" '
-            . 'stroke-linecap="round" />';
+                echo '<circle '
+                    . 'cx="' . $pointX . '" '
+                    . 'cy="' . $pointY . '" '
+                    . 'r="2.5" '
+                    . 'fill="' . $style['colour'] . '" '
+                    . 'fill-opacity="' . $style['opacity'] . '" />';
+
+                continue;
+            }
+
+            echo '<polyline '
+                . 'points="' . implode(' ', $points) . '" '
+                . 'fill="none" '
+                . 'stroke="' . $style['colour'] . '" '
+                . 'stroke-width="' . $style['width'] . '" '
+                . 'stroke-opacity="' . $style['opacity'] . '" '
+                . 'stroke-linejoin="round" '
+                . 'stroke-linecap="round" />';
+        }
     }
 
     //Mark the maximum recorded gust directly on the graph.

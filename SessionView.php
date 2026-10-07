@@ -216,7 +216,7 @@ echo '<a href="SessionTiming.php?session_id='
     . (int) $session['id']
     . '">';
 
-echo 'View or edit session timing';
+echo 'Edit session timing';
 
 echo '</a>';
 
@@ -275,7 +275,7 @@ echo '<a href="DirectionReference.php?session_id='
     . (int) $session['id']
     . '">';
 
-echo 'View or edit direction reference';
+echo 'Edit direction reference';
 
 echo '</a>';
 

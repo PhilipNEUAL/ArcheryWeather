@@ -559,11 +559,9 @@ if ($observations) {
     echo '</th></tr>';
 
     echo '<tr><td colspan="2">';
-    echo 'Calculated from available stored readings. ';
-    echo 'Averages are per observation; missing readings are excluded.';
+    echo 'Calculated from available stored readings. Averages are per observation; missing readings are excluded.';
     echo '<br>';
-    echo ' Prevailing direction is a circular mean of ';
-    echo 'directions, with the session direction correction applied.';
+    echo ' Prevailing direction is a circular mean of directions, with the session direction correction applied.';
     echo '</td></tr>';
 
     foreach ($summaryRows as $label => $value) {
@@ -591,5 +589,47 @@ resultspack_weather_render_wind_graph(
     $events,
     $session
 );
+
+resultspack_weather_viewer_render_wind_rose(
+    $observations,
+    $session
+);
+
+$environmentGraphs = array(
+    array(
+        'Temperature', 'air_temp', 'Temperature (°C)',
+        '#ad1457', 1, false, 4, 0.5
+    ),
+    array(
+        'Relative humidity', 'humidity', 'Relative humidity (%)',
+        '#00838f', 0, false, 10, 1
+    ),
+    array(
+        'Station pressure', 'station_pressure', 'Station pressure (hPa)',
+        '#5d4037', 1, false, 5, 0.5
+    ),
+    array(
+        'Solar radiation', 'solar_radiation', 'Solar radiation (W/m²)',
+        '#f9a825', 0, true, 0, 1
+    ),
+);
+
+foreach ($environmentGraphs as $graph) {
+    resultspack_weather_viewer_render_single_graph(
+        $graph[0] . ' across the session',
+        $graph[0] . ' across the weather session',
+        $observations,
+        $graph[1],
+        $events,
+        $session,
+        $graph[2],
+        $graph[0],
+        $graph[3],
+        $graph[4],
+        $graph[5],
+        $graph[6],
+        $graph[7]
+    );
+}
 
 include('Common/Templates/tail.php');

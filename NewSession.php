@@ -82,6 +82,7 @@ $createdSessionId = (int) (
 unset($_SESSION['archeryweather_created_session']);
 
 $researchStatus = 'test';
+$shootingBearing = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $submittedToken = $_POST['form_token'] ?? '';
@@ -99,6 +100,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tournamentInput = $_POST['tournament_id'] ?? '';
         $stationInput = $_POST['station_id'] ?? '';
 
+        $shootingBearing = $_POST['shooting_bearing'] ?? '';
+
+        if (!is_string($shootingBearing)) {
+            $shootingBearing = 'invalid';
+        }
+        
         $researchStatus = $_POST['research_status'] ?? '';
 
         if (!is_string($researchStatus)) {
@@ -136,7 +143,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $tournamentId,
                     $stationId,
                     $stations[$stationId],
-                    $researchStatus
+                    $researchStatus,
+                    $shootingBearing
                 );
 
                 // Consume the token only after successful creation.
@@ -246,6 +254,28 @@ include('Common/Templates/head.php');
 
     <tr>
         <td>
+            <label for="shooting_bearing">Shooting bearing</label>
+        </td>
+        <td>
+            <input
+                type="number"
+                id="shooting_bearing"
+                name="shooting_bearing"
+                min="0"
+                max="359.9"
+                step="0.1"
+                value="<?php
+                    echo archeryweather_new_session_escape(
+                        $shootingBearing
+                    );
+                ?>"
+            >
+            ° towards the targets
+        </td>
+    </tr>
+
+    <tr>
+        <td>
             <label for="research_status">Session type</label>
         </td>
         <td>
@@ -266,10 +296,6 @@ include('Common/Templates/head.php');
                         : '';
                 ?>>Real</option>
             </select>
-
-            <p>
-                Choose Real for competitions. Choose Test for development.
-            </p>
         </td>
     </tr>
 

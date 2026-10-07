@@ -179,13 +179,42 @@ function resultspack_weather_create_session(
     $tournamentId,
     $stationId,
     $stationName = '',
-    $researchStatus = 'test'
+    $researchStatus = 'test',
+    $shootingBearing = null
 ) {
     if (!in_array($researchStatus, array('real', 'test'), true)) {
         throw new InvalidArgumentException(
             'Please choose Real or Test for the new session.'
         );
     }
+
+    // Bearing of zero is north; blank is unknown.
+    if (is_string($shootingBearing)) {
+        $shootingBearing = trim($shootingBearing);
+    }
+
+    if ($shootingBearing === '' || $shootingBearing === null) {
+        $shootingBearing = null;
+    } else {
+        if (
+            !is_numeric($shootingBearing)
+            || !is_finite((float) $shootingBearing)
+            || (float) $shootingBearing < 0
+            || (float) $shootingBearing >= 360
+        ) {
+            throw new InvalidArgumentException(
+                'Shooting bearing must be at least 0° and less than 360°, '
+                . 'or left blank if unknown.'
+            );
+        }
+
+        $shootingBearing = (float) $shootingBearing;
+    }
+
+    $bearingSql = $shootingBearing === null
+        ? 'NULL'
+        : number_format($shootingBearing, 6, '.', '');
+
     $tournamentId = filter_var(
         $tournamentId,
         FILTER_VALIDATE_INT,
@@ -239,6 +268,7 @@ function resultspack_weather_create_session(
             "CrwsStartedEpoch, " .
             "CrwsTimezone, " .
             "CrwsPositionNotes, " .
+            "CrwsShootingBearing, " .
             "CrwsResearchStatus, " .
             "CrwsCreated" .
         ") VALUES (" .
@@ -248,6 +278,7 @@ function resultspack_weather_create_session(
             $startedEpoch . ", " .
             StrSafe_DB($timezone) . ", " .
             StrSafe_DB('') . ", " .
+            $bearingSql . ", " .
             StrSafe_DB($researchStatus) . ", " .
             StrSafe_DB(gmdate('Y-m-d H:i:s', $startedEpoch)) .
         ")"

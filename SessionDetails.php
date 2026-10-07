@@ -35,6 +35,32 @@ $PAGE_TITLE = $session
     ? 'Session Details #' . $session['id']
     : 'Weather Session Not Found';
 
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+if (empty($_SESSION['archeryweather_end_token'])) {
+    $_SESSION['archeryweather_end_token'] =
+        bin2hex(random_bytes(32));
+}
+
+if (empty($_SESSION['archeryweather_collect_token'])) {
+    $_SESSION['archeryweather_collect_token'] =
+        bin2hex(random_bytes(32));
+}
+
+$collectionMessage = '';
+
+if ($session) {
+    $collectionMessage =
+        $_SESSION['archeryweather_collection_messages'][$session['id']]
+        ?? '';
+
+    unset(
+        $_SESSION['archeryweather_collection_messages'][$session['id']]
+    );
+}
+
 include('Common/Templates/head.php');
 
 echo '<p>';
@@ -418,6 +444,68 @@ if ($quality) {
 }
 
 echo '</table>';
+
+if ($session['ended_epoch'] === null) {
+    echo '<form method="post" action="SessionEnd.php">';
+
+    echo '<input type="hidden" name="form_token" value="'
+        . htmlspecialchars(
+            $_SESSION['archeryweather_end_token'],
+            ENT_QUOTES,
+            'UTF-8'
+        )
+        . '">';
+
+    echo '<input type="hidden" name="session_id" value="'
+        . (int) $session['id']
+        . '">';
+
+    echo '<p><strong>This session is open.</strong> '
+        . 'Ending it records the current time. '
+        . 'This does not yet download weather observations.</p>';
+
+    echo '<p><button type="submit">'
+        . 'End session #' . (int) $session['id'] . ' now'
+        . '</button></p>';
+
+    echo '</form>';
+}
+
+if ($collectionMessage !== '') {
+    echo '<p role="status"><strong>'
+        . htmlspecialchars(
+            $collectionMessage,
+            ENT_QUOTES,
+            'UTF-8'
+        )
+        . '</strong></p>';
+}
+
+if ($session['ended_epoch'] !== null) {
+    echo '<form method="post" action="SessionCollect.php">';
+
+    echo '<input type="hidden" name="form_token" value="'
+        . htmlspecialchars(
+            $_SESSION['archeryweather_collect_token'],
+            ENT_QUOTES,
+            'UTF-8'
+        )
+        . '">';
+
+    echo '<input type="hidden" name="session_id" value="'
+        . (int) $session['id']
+        . '">';
+
+    echo '<p>Retrieve available weather observations between '
+        . 'this session’s recorded start and end times. '
+        . 'Existing readings are preserved when you retry.</p>';
+
+    echo '<p><button type="submit">'
+        . 'Retrieve observations from Tempest'
+        . '</button></p>';
+
+    echo '</form>';
+}
 
 echo '<p><a href="SessionView.php?session_id='
     . (int) $session['id']

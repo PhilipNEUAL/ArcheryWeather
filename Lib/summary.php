@@ -237,3 +237,83 @@ function resultspack_weather_wind_context(
         'relative_percent' => $relativePercent,
     );
 }
+
+// Build a plain-text weather summary for display or export.
+// Uses the existing environmental and corrected wind summaries.
+function resultspack_weather_concise_summary(
+    array $environment,
+    array $windContext
+) {
+    $parts = array();
+
+    $temperature = $environment['temperature'] ?? null;
+
+    if ($temperature !== null) {
+        $parts[] =
+            resultspack_weather_format_number(
+                $temperature['average'],
+                1
+            ) . ' °C average ('
+            . resultspack_weather_format_number(
+                $temperature['min'],
+                1
+            ) . '–'
+            . resultspack_weather_format_number(
+                $temperature['max'],
+                1
+            ) . ' °C)';
+    } else {
+        $parts[] = 'temperature data unavailable';
+    }
+
+    $wind = $environment['wind'] ?? null;
+
+    if ($wind !== null) {
+        $parts[] = 'wind '
+            . resultspack_weather_format_number(
+                $wind['average'],
+                1
+            ) . ' m/s average';
+    } else {
+        $parts[] = 'wind-speed data unavailable';
+    }
+
+    $direction = $windContext['prevailing_direction'] ?? null;
+
+    if ($direction !== null) {
+        // Keep rounded bearings in the range 0–359°.
+        $roundedDirection = ((int) round($direction)) % 360;
+
+        $parts[] = 'prevailing '
+            . resultspack_weather_compass_direction($direction)
+            . ' (' . $roundedDirection . '°)';
+    } elseif (($windContext['direction_count'] ?? 0) > 0) {
+        $parts[] = 'highly variable wind direction';
+    } else {
+        $parts[] = 'wind-direction data unavailable';
+    }
+
+    $rain = $environment['rain'] ?? null;
+
+    if ($rain === null) {
+        $parts[] = 'rainfall data unavailable';
+    } else {
+        $recordedRain = $rain['average'] * $rain['count'];
+
+        if ($recordedRain == 0.0) {
+            $parts[] = 'no rain recorded';
+        } elseif ($recordedRain > 0 && $recordedRain < 0.01) {
+            $parts[] = 'less than 0.01 mm rain recorded';
+        } elseif ($recordedRain > 0) {
+            $parts[] =
+                resultspack_weather_format_number(
+                    $recordedRain,
+                    2
+                ) . ' mm rain recorded';
+        } else {
+            $parts[] = 'rainfall data needs checking';
+        }
+    }
+
+    return implode('; ', $parts);
+}

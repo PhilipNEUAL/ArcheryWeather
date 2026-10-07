@@ -424,10 +424,6 @@ resultspack_weather_render_environmental_summary(
     $session
 );
 
-//echo '<p>';
-//echo '<a href="NewSession.php">Create a Test weather session</a>';
-//echo '</p>';
-
 $events = resultspack_weather_get_events($session['id']);
 
 resultspack_weather_render_wind_graph(
@@ -436,10 +432,19 @@ resultspack_weather_render_wind_graph(
     $session
 );
 
+echo '<p><a href="DownloadWindGraph.php?session_id='
+    . (int) $session['id']
+    . '">Download wind graph (SVG)</a></p>';
+
 resultspack_weather_viewer_render_wind_rose(
     $observations,
     $session
 );
+
+echo '<details style="margin-top:20px">';
+echo '<summary style="cursor:pointer;font-weight:bold;padding:10px">';
+echo 'More environmental graphs — temperature, humidity, pressure and solar radiation';
+echo '</summary>';
 
 $environmentGraphs = array(
     array(
@@ -477,5 +482,7 @@ foreach ($environmentGraphs as $graph) {
         $graph[7]
     );
 }
+
+echo '</details>';
 
 include('Common/Templates/tail.php');

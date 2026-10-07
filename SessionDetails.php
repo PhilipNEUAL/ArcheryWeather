@@ -3,12 +3,10 @@
 require_once(__DIR__ . '/Lib/bootstrap.php');
 require_once(__DIR__ . '/Lib/config.php');
 require_once(__DIR__ . '/Lib/corrections.php');
-require_once(__DIR__ . '/Lib/display.php');
-require_once(__DIR__ . '/Lib/events.php');
-require_once(__DIR__ . '/Lib/graphs.php');
 require_once(__DIR__ . '/Lib/helpers.php');
 require_once(__DIR__ . '/Lib/ianseo.php');
 require_once(__DIR__ . '/Lib/observations.php');
+require_once(__DIR__ . '/Lib/quality.php');
 require_once(__DIR__ . '/Lib/schema.php');
 require_once(__DIR__ . '/Lib/summary.php');
 require_once(__DIR__ . '/Lib/sessions.php');
@@ -34,7 +32,7 @@ if ($sessionId === false) {
 }
 
 $PAGE_TITLE = $session
-    ? 'Weather Session #' . $session['id']
+    ? 'Session Details #' . $session['id']
     : 'Weather Session Not Found';
 
 include('Common/Templates/head.php');
@@ -89,6 +87,11 @@ foreach ($tournaments as $tournament) {
 
 $observations =
     resultspack_weather_get_observations(
+        $session['id']
+    );
+
+$quality =
+    resultspack_weather_session_quality(
         $session['id']
     );
 
@@ -147,7 +150,7 @@ echo '<table class="Tabella freeWidth">';
 
 echo '<tr>';
 echo '<th class="Main" colspan="2">';
-echo 'Weather Session '
+echo 'Session details and data quality — Session '
     . (int) $session['id'];
 echo '</th>';
 echo '</tr>';
@@ -161,6 +164,28 @@ echo '<td class="Bold">Competition</td>';
 echo '<td>'
     . htmlspecialchars($competitionName)
     . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Research status</td>';
+echo '<td>'
+    . htmlspecialchars(
+        ucfirst(
+            $session['research_status']
+        )
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Station</td>';
+echo '<td>'
+    . htmlspecialchars(
+        $session['station_name']
+    )
+    . ' ('
+    . (int) $session['station_id']
+    . ')</td>';
 echo '</tr>';
 
 echo '<tr>';
@@ -194,6 +219,26 @@ echo 'Session timing and audit ↗';
 echo '</a>';
 
 echo '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Timezone</td>';
+echo '<td>'
+    . htmlspecialchars(
+        $session['timezone']
+    )
+    . '</td>';
+echo '</tr>';
+
+$effectiveShootingBearing =
+    resultspack_weather_effective_shooting_bearing(
+        $session
+    );
+
+echo '<tr>';
+echo '<th class="Title" colspan="2">';
+echo 'Direction reference';
+echo '</th>';
 echo '</tr>';
 
 $effectiveShootingBearing =
@@ -236,91 +281,143 @@ echo '</td>';
 echo '</tr>';
 
 echo '<tr>';
-echo '<td class="Bold">Session records</td>';
-echo '<td><a href="SessionDetails.php?session_id='
-    . (int) $session['id']
-    . '">Session details and data quality ↗</a></td>';
+echo '<td class="Bold">Sensor height</td>';
+echo '<td>'
+    . (
+        $session['sensor_height'] !== null
+            ? htmlspecialchars(
+                (string) $session['sensor_height']
+            ) . ' m'
+            : 'Not recorded'
+    )
+    . '</td>';
 echo '</tr>';
+
+echo '<tr>';
+echo '<th class="Title" colspan="2">';
+echo 'Site geometry';
+echo '</th>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Station fore/aft position</td>';
+echo '<td>'
+    . htmlspecialchars(
+        resultspack_weather_forward_offset_label(
+            $session['forward_offset']
+        )
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Station lateral position</td>';
+echo '<td>'
+    . htmlspecialchars(
+        resultspack_weather_lateral_offset_label(
+            $session['lateral_offset']
+        )
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Ground surface</td>';
+echo '<td>'
+    . (
+        $session['ground_surface'] !== ''
+            ? htmlspecialchars(
+                ucwords(
+                    str_replace(
+                        '_',
+                        ' ',
+                        $session['ground_surface']
+                    )
+                )
+            )
+            : 'Not recorded'
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Site exposure</td>';
+echo '<td>'
+    . (
+        $session['exposure'] !== ''
+            ? htmlspecialchars(
+                ucwords(
+                    str_replace(
+                        '_',
+                        ' ',
+                        $session['exposure']
+                    )
+                )
+            )
+            : 'Not recorded'
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Position notes</td>';
+echo '<td>'
+    . (
+        $session['position_notes'] !== ''
+            ? nl2br(
+                htmlspecialchars(
+                    $session['position_notes']
+                )
+            )
+            : 'None'
+    )
+    . '</td>';
+echo '</tr>';
+
+echo '<tr>';
+echo '<td class="Bold">Observations stored</td>';
+echo '<td>'
+    . count($observations)
+    . '</td>';
+echo '</tr>';
+
+if ($quality) {
+    echo '<tr>';
+    echo '<td class="Bold">Expected observations</td>';
+    echo '<td>'
+        . (int) $quality['expected']
+        . '</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Data coverage</td>';
+    echo '<td>'
+        . resultspack_weather_format_number(
+            $quality['coverage_percent'],
+            1
+        )
+        . '%</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Missing observations</td>';
+    echo '<td>'
+        . (int) $quality['missing']
+        . '</td>';
+    echo '</tr>';
+
+    echo '<tr>';
+    echo '<td class="Bold">Longest gap</td>';
+    echo '<td>'
+        . (int) $quality['longest_gap_minutes']
+        . ' min</td>';
+    echo '</tr>';
+}
 
 echo '</table>';
 
-resultspack_weather_render_environmental_summary(
-    $observations,
-    $session
-);
-
-$events = resultspack_weather_get_events($session['id']);
-
-resultspack_weather_render_wind_graph(
-    $observations,
-    $events,
-    $session
-);
-
-echo '<p><a href="DownloadGraph.php?session_id='
+echo '<p><a href="SessionView.php?session_id='
     . (int) $session['id']
-    . '&amp;graph=wind">Download wind graph (SVG)</a></p>';
-
-resultspack_weather_viewer_render_wind_rose(
-    $observations,
-    $session
-);
-
-echo '<p><a href="DownloadGraph.php?session_id='
-    . (int) $session['id']
-    . '&amp;graph=compass">Download wind compass (SVG)</a></p>';
-
-echo '<details style="margin-top:20px">';
-echo '<summary style="cursor:pointer;font-weight:bold;padding:10px">';
-echo 'More environmental graphs — temperature, humidity, pressure and solar radiation';
-echo '</summary>';
-
-$environmentGraphs = array(
-    array(
-        'Temperature', 'air_temp', 'Temperature (°C)',
-        '#ad1457', 1, false, 4, 0.5
-    ),
-    array(
-        'Relative humidity', 'humidity', 'Relative humidity (%)',
-        '#00838f', 0, false, 10, 1
-    ),
-    array(
-        'Station pressure', 'station_pressure', 'Station pressure (hPa)',
-        '#5d4037', 1, false, 5, 0.5
-    ),
-    array(
-        'Solar radiation', 'solar_radiation', 'Solar radiation (W/m²)',
-        '#f9a825', 0, true, 0, 1
-    ),
-);
-
-foreach ($environmentGraphs as $graph) {
-    resultspack_weather_viewer_render_single_graph(
-        $graph[0] . ' across the session',
-        $graph[0] . ' across the weather session',
-        $observations,
-        $graph[1],
-        $events,
-        $session,
-        $graph[2],
-        $graph[0],
-        $graph[3],
-        $graph[4],
-        $graph[5],
-        $graph[6],
-        $graph[7]
-    );
-
-    echo '<p><a href="DownloadGraph.php?session_id='
-    . (int) $session['id']
-    . '&amp;graph=' . rawurlencode($graph[1])
-    . '">Download '
-    . htmlspecialchars($graph[0], ENT_QUOTES, 'UTF-8')
-    . ' graph (SVG)</a></p>';
-}
-
-echo '</details>';
-
-echo '<script src="Js/graph_download.js" defer></script>';
+    . '">&larr; Back to session summary and graphs</a></p>';
 
 include('Common/Templates/tail.php');

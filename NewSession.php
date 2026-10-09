@@ -3,6 +3,7 @@
 require_once(__DIR__ . '/Lib/bootstrap.php');
 require_once(__DIR__ . '/Lib/config.php');
 require_once(__DIR__ . '/Lib/tempest.php');
+require_once(__DIR__ . '/Lib/freshness.php');
 require_once(__DIR__ . '/Lib/ianseo.php');
 require_once(__DIR__ . '/Lib/schema.php');
 require_once(__DIR__ . '/Lib/sessions.php');
@@ -75,6 +76,9 @@ if (empty($stationResponse['ok'])) {
         }
     }
 }
+
+// Allow status checks only for stations returned for this account.
+$_SESSION['archeryweather_station_ids'] = array_keys($stations);
 
 $createdSessionId = (int) (
     $_SESSION['archeryweather_created_session'] ?? 0
@@ -190,6 +194,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $researchStatus = '';
         }
 
+        $allowNonLive =
+            ($_POST['allow_nonlive_weather'] ?? '') === '1';
+
         $tournamentId = is_string($tournamentInput)
             ? filter_var(
                 $tournamentInput,
@@ -216,6 +223,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 archeryweather_ensure_schema();
+
+                if ($researchStatus === 'real') {
+                    $freshness =
+                        resultspack_weather_check_station_freshness(
+                            $stationId
+                        );
+
+                    if (
+                        $freshness['status'] !== 'live'
+                        && !$allowNonLive
+                    ) {
+                        throw new InvalidArgumentException(
+                            'The session has not been created. The latest station check is '
+                            . $freshness['label']
+                            . '. Tick "start session" above if you really want to proceed.'
+                        );
+                    }
+                }
 
                 $newSessionId = resultspack_weather_create_session(
                     $tournamentId,
@@ -287,14 +312,6 @@ include('Common/Templates/head.php');
         <th class="Main" colspan="2">New weather session</th>
     </tr>
 
-    <?php if ($error !== ''): ?>
-        <tr>
-            <td colspan="2">
-                <?php echo archeryweather_new_session_escape($error); ?>
-            </td>
-        </tr>
-    <?php endif; ?>
-
     <tr>
         <td><label for="tournament_id">Competition</label></td>
         <td>
@@ -334,6 +351,19 @@ include('Common/Templates/head.php');
                     </option>
                 <?php endforeach; ?>
             </select>
+        </td>
+    </tr>
+
+    <tr>
+        <td>Latest station observation</td>
+        <td>
+            <div id="station-status" role="status" aria-live="polite">
+                Select a station to check its latest observation.
+            </div>
+
+            <noscript>
+                Automatic status checks require JavaScript.
+            </noscript>
         </td>
     </tr>
 
@@ -434,13 +464,6 @@ include('Common/Templates/head.php');
                 ?>"
             >
             m from the shooting line
-
-            <p>
-                Positive = towards the targets.
-                Negative = behind the shooting line.
-                Zero = on the shooting line.
-                Leave blank if unknown.
-            </p>
         </td>
     </tr>
 
@@ -463,13 +486,6 @@ include('Common/Templates/head.php');
                 ?>"
             >
             m from the field centre line
-
-            <p>
-                Looking towards the targets:
-                positive = right; negative = left.
-                Zero = on the field centre line.
-                Leave blank if unknown.
-            </p>
         </td>
     </tr>
 
@@ -522,11 +538,6 @@ include('Common/Templates/head.php');
                     </option>
                 <?php endforeach; ?>
             </select>
-
-            <p>
-                How exposed is the station to the surrounding wind?
-                Use the notes below to describe nearby shelter.
-            </p>
         </td>
     </tr>
 
@@ -547,12 +558,6 @@ include('Common/Templates/head.php');
                     $positionNotes
                 );
             ?></textarea>
-
-            <p>
-                Optional: nearby trees, buildings, slopes or other
-                details that may affect the readings.
-                Maximum 2000 characters.
-            </p>
         </td>
     </tr>
 
@@ -594,6 +599,17 @@ include('Common/Templates/head.php');
 </table>
 
     <p>
+        <label>
+            <input
+                type="checkbox"
+                name="allow_nonlive_weather"
+                value="1"
+            >
+            Start session even if station is offline
+        </label>
+    </p>
+
+    <p>
         <button
             type="submit"
             <?php echo (!$tournaments || !$stations) ? 'disabled' : ''; ?>
@@ -601,8 +617,31 @@ include('Common/Templates/head.php');
             Create session starting now
         </button>
     </p>
+
+    <?php if ($error !== ''): ?>
+        <div
+            id="session-error"
+            role="alert"
+            tabindex="-1"
+            style="color:#a12622;border:2px solid #a12622;
+                background:#fff4f4;padding:12px;margin:12px 0;
+                font-weight:bold;"
+        >
+            <?php echo archeryweather_new_session_escape($error); ?>
+        </div>
+
+        <script>
+            const sessionError = document.getElementById('session-error');
+            sessionError.focus();
+            sessionError.scrollIntoView({
+                block: 'center'
+            });
+        </script>
+    <?php endif; ?>
 </form>
 
 <?php
+
+echo '<script src="js/station_status.js" defer></script>';
 
 include('Common/Templates/tail.php');

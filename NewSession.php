@@ -83,6 +83,44 @@ unset($_SESSION['archeryweather_created_session']);
 
 $researchStatus = 'test';
 $shootingBearing = '';
+$sensorHeight = '';
+$forwardOffset = '';
+$lateralOffset = '';
+
+$groundSurface = '';
+$exposure = '';
+$positionNotes = '';
+
+$groundSurfaceOptions = array(
+    '' => 'Not recorded',
+    'grass' => 'Grass',
+    'artificial_turf' => 'Artificial turf',
+    'hardstanding' => 'Hardstanding',
+    'indoor_floor' => 'Indoor floor',
+    'mixed' => 'Mixed',
+    'other' => 'Other',
+);
+
+$exposureOptions = array(
+    '' => 'Not recorded',
+    'open' => 'Open',
+    'partly_sheltered' => 'Partly sheltered',
+    'sheltered' => 'Sheltered',
+    'indoor' => 'Indoor',
+    'other' => 'Other',
+);
+
+$directionVerification = 'unverified';
+
+$verificationMethods = array(
+    'unverified' => 'Unverified',
+    'phone_compass' => 'Phone compass',
+    'map_satellite' => 'Map / satellite',
+    'second_compass' => 'Second compass',
+    'known_site_alignment' => 'Known site alignment',
+    'surveyed_bearing' => 'Surveyed bearing',
+    'other' => 'Other',
+);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $submittedToken = $_POST['form_token'] ?? '';
@@ -100,6 +138,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tournamentInput = $_POST['tournament_id'] ?? '';
         $stationInput = $_POST['station_id'] ?? '';
 
+        $directionVerification =
+            $_POST['direction_verification'] ?? '';
+
+        if (!is_string($directionVerification)) {
+            $directionVerification = '';
+        }
+
+        $groundSurface = $_POST['ground_surface'] ?? '';
+        $exposure = $_POST['exposure'] ?? '';
+        $positionNotes = $_POST['position_notes'] ?? '';
+
+        if (!is_string($groundSurface)) {
+            $groundSurface = 'invalid';
+        }
+
+        if (!is_string($exposure)) {
+            $exposure = 'invalid';
+        }
+
+        if (!is_string($positionNotes)) {
+            $positionNotes = null;
+        }        
+        
+        $forwardOffset = $_POST['forward_offset'] ?? '';
+        $lateralOffset = $_POST['lateral_offset'] ?? '';
+
+        if (!is_string($forwardOffset)) {
+            $forwardOffset = 'invalid';
+        }
+
+        if (!is_string($lateralOffset)) {
+            $lateralOffset = 'invalid';
+        }        
+        
+        $sensorHeight = $_POST['sensor_height'] ?? '';
+
+        if (!is_string($sensorHeight)) {
+            $sensorHeight = 'invalid';
+        }
+        
         $shootingBearing = $_POST['shooting_bearing'] ?? '';
 
         if (!is_string($shootingBearing)) {
@@ -144,7 +222,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stationId,
                     $stations[$stationId],
                     $researchStatus,
-                    $shootingBearing
+                    $shootingBearing,
+                    $directionVerification,
+                    $sensorHeight,
+                    $forwardOffset,
+                    $lateralOffset,
+                    $groundSurface,
+                    $exposure,
+                    $positionNotes
                 );
 
                 // Consume the token only after successful creation.
@@ -271,6 +356,203 @@ include('Common/Templates/head.php');
                 ?>"
             >
             ° towards the targets
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <label for="direction_verification">
+                Bearing verification
+            </label>
+        </td>
+        <td>
+            <select
+                id="direction_verification"
+                name="direction_verification"
+                required
+            >
+                <?php foreach ($verificationMethods as $value => $label): ?>
+                    <option
+                        value="<?php
+                            echo archeryweather_new_session_escape($value);
+                        ?>"
+                        <?php
+                            echo $directionVerification === $value
+                                ? 'selected'
+                                : '';
+                        ?>
+                    >
+                        <?php
+                            echo archeryweather_new_session_escape($label);
+                        ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <label for="sensor_height">Sensor height</label>
+        </td>
+        <td>
+            <input
+                type="number"
+                id="sensor_height"
+                name="sensor_height"
+                min="0.01"
+                max="20"
+                step="0.01"
+                value="<?php
+                    echo archeryweather_new_session_escape(
+                        $sensorHeight
+                    );
+                ?>"
+            >
+            m above ground
+
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <label for="forward_offset">Station fore/aft position</label>
+        </td>
+        <td>
+            <input
+                type="number"
+                id="forward_offset"
+                name="forward_offset"
+                min="-1000"
+                max="1000"
+                step="0.01"
+                value="<?php
+                    echo archeryweather_new_session_escape(
+                        $forwardOffset
+                    );
+                ?>"
+            >
+            m from the shooting line
+
+            <p>
+                Positive = towards the targets.
+                Negative = behind the shooting line.
+                Zero = on the shooting line.
+                Leave blank if unknown.
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <label for="lateral_offset">Station lateral position</label>
+        </td>
+        <td>
+            <input
+                type="number"
+                id="lateral_offset"
+                name="lateral_offset"
+                min="-1000"
+                max="1000"
+                step="0.01"
+                value="<?php
+                    echo archeryweather_new_session_escape(
+                        $lateralOffset
+                    );
+                ?>"
+            >
+            m from the field centre line
+
+            <p>
+                Looking towards the targets:
+                positive = right; negative = left.
+                Zero = on the field centre line.
+                Leave blank if unknown.
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <label for="ground_surface">Ground surface</label>
+        </td>
+        <td>
+            <select id="ground_surface" name="ground_surface">
+                <?php foreach ($groundSurfaceOptions as $value => $label): ?>
+                    <option
+                        value="<?php
+                            echo archeryweather_new_session_escape($value);
+                        ?>"
+                        <?php
+                            echo $groundSurface === $value
+                                ? 'selected'
+                                : '';
+                        ?>
+                    >
+                        <?php
+                            echo archeryweather_new_session_escape($label);
+                        ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <label for="exposure">Site exposure</label>
+        </td>
+        <td>
+            <select id="exposure" name="exposure">
+                <?php foreach ($exposureOptions as $value => $label): ?>
+                    <option
+                        value="<?php
+                            echo archeryweather_new_session_escape($value);
+                        ?>"
+                        <?php
+                            echo $exposure === $value
+                                ? 'selected'
+                                : '';
+                        ?>
+                    >
+                        <?php
+                            echo archeryweather_new_session_escape($label);
+                        ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <p>
+                How exposed is the station to the surrounding wind?
+                Use the notes below to describe nearby shelter.
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <label for="position_notes">Position notes</label>
+        </td>
+        <td>
+            <textarea
+                id="position_notes"
+                name="position_notes"
+                rows="4"
+                cols="55"
+                maxlength="2000"
+                style="max-width:100%;"
+            ><?php
+                echo archeryweather_new_session_escape(
+                    $positionNotes
+                );
+            ?></textarea>
+
+            <p>
+                Optional: nearby trees, buildings, slopes or other
+                details that may affect the readings.
+                Maximum 2000 characters.
+            </p>
         </td>
     </tr>
 

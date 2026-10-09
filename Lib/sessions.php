@@ -180,8 +180,16 @@ function resultspack_weather_create_session(
     $stationId,
     $stationName = '',
     $researchStatus = 'test',
-    $shootingBearing = null
+    $shootingBearing = null,
+    $directionVerification = 'unverified',
+    $sensorHeight = null,
+    $forwardOffset = null,
+    $lateralOffset = null,
+    $groundSurface = '',
+    $exposure = '',
+    $positionNotes = ''
 ) {
+
     if (!in_array($researchStatus, array('real', 'test'), true)) {
         throw new InvalidArgumentException(
             'Please choose Real or Test for the new session.'
@@ -214,6 +222,37 @@ function resultspack_weather_create_session(
     $bearingSql = $shootingBearing === null
         ? 'NULL'
         : number_format($shootingBearing, 6, '.', '');
+
+    $allowedVerificationMethods = array(
+        'unverified',
+        'phone_compass',
+        'map_satellite',
+        'second_compass',
+        'known_site_alignment',
+        'surveyed_bearing',
+        'other',
+    );
+
+    if (
+        !in_array(
+            $directionVerification,
+            $allowedVerificationMethods,
+            true
+        )
+    ) {
+        throw new InvalidArgumentException(
+            'Please choose a valid direction verification method.'
+        );
+    }
+
+    if (
+        $shootingBearing === null
+        && $directionVerification !== 'unverified'
+    ) {
+        throw new InvalidArgumentException(
+            'Enter a shooting bearing before choosing how it was verified.'
+        );
+    }
 
     $tournamentId = filter_var(
         $tournamentId,
@@ -257,6 +296,117 @@ function resultspack_weather_create_session(
         );
     }
 
+    if (is_string($sensorHeight)) {
+        $sensorHeight = trim($sensorHeight);
+    }
+
+    if ($sensorHeight === '' || $sensorHeight === null) {
+        $sensorHeight = null;
+    } else {
+        if (
+            !is_numeric($sensorHeight)
+            || !is_finite((float) $sensorHeight)
+            || (float) $sensorHeight < 0.01
+            || (float) $sensorHeight > 20
+        ) {
+            throw new InvalidArgumentException(
+                'Sensor height must be between 0.01 and 20 metres, '
+                . 'or left blank if unknown.'
+            );
+        }
+
+        $sensorHeight = (float) $sensorHeight;
+    }
+
+    $heightSql = $sensorHeight === null
+        ? 'NULL'
+        : number_format($sensorHeight, 2, '.', '');
+
+    $positionSql = array();
+
+    foreach (
+        array(
+            'Fore/aft position' => $forwardOffset,
+            'Lateral position' => $lateralOffset,
+        ) as $label => $offset
+    ) {
+        if (is_string($offset)) {
+            $offset = trim($offset);
+        }
+
+        if ($offset === '' || $offset === null) {
+            $positionSql[] = 'NULL';
+            continue;
+        }
+
+        if (
+            !is_numeric($offset)
+            || !is_finite((float) $offset)
+            || (float) $offset < -1000
+            || (float) $offset > 1000
+        ) {
+            throw new InvalidArgumentException(
+                $label . ' must be between -1000 and 1000 metres, '
+                . 'or left blank if unknown.'
+            );
+        }
+
+        $positionSql[] = number_format(
+            (float) $offset,
+            2,
+            '.',
+            ''
+        );
+    }
+
+    $forwardOffsetSql = $positionSql[0];
+    $lateralOffsetSql = $positionSql[1];
+    
+    $allowedGroundSurfaces = array(
+        '',
+        'grass',
+        'artificial_turf',
+        'hardstanding',
+        'indoor_floor',
+        'mixed',
+        'other',
+    );
+
+    if (!in_array($groundSurface, $allowedGroundSurfaces, true)) {
+        throw new InvalidArgumentException(
+            'Please choose a valid ground surface.'
+        );
+    }
+
+    $allowedExposures = array(
+        '',
+        'open',
+        'partly_sheltered',
+        'sheltered',
+        'indoor',
+        'other',
+    );
+
+    if (!in_array($exposure, $allowedExposures, true)) {
+        throw new InvalidArgumentException(
+            'Please choose a valid site exposure.'
+        );
+    }
+
+    if (!is_string($positionNotes)) {
+        throw new InvalidArgumentException(
+            'Please enter position notes as text.'
+        );
+    }
+
+    $positionNotes = trim($positionNotes);
+
+    if (preg_match('/\A.{0,2000}\z/us', $positionNotes) !== 1) {
+        throw new InvalidArgumentException(
+            'Position notes must contain valid text of no more than 2000 characters.'
+        );
+    }
+
     $startedEpoch = time();
     $timezone = resultspack_weather_timezone();
 
@@ -269,6 +419,12 @@ function resultspack_weather_create_session(
             "CrwsTimezone, " .
             "CrwsPositionNotes, " .
             "CrwsShootingBearing, " .
+            "CrwsDirectionVerification, " .
+            "CrwsSensorHeight, " .
+            "CrwsForwardOffset, " .
+            "CrwsLateralOffset, " .
+            "CrwsGroundSurface, " .
+            "CrwsExposure, " .
             "CrwsResearchStatus, " .
             "CrwsCreated" .
         ") VALUES (" .
@@ -277,8 +433,14 @@ function resultspack_weather_create_session(
             StrSafe_DB($stationName) . ", " .
             $startedEpoch . ", " .
             StrSafe_DB($timezone) . ", " .
-            StrSafe_DB('') . ", " .
+            StrSafe_DB($positionNotes) . ", " .
             $bearingSql . ", " .
+            StrSafe_DB($directionVerification) . ", " .
+            $heightSql . ", " .
+            $forwardOffsetSql . ", " .
+            $lateralOffsetSql . ", " .
+            StrSafe_DB($groundSurface) . ", " .
+            StrSafe_DB($exposure) . ", " .
             StrSafe_DB($researchStatus) . ", " .
             StrSafe_DB(gmdate('Y-m-d H:i:s', $startedEpoch)) .
         ")"

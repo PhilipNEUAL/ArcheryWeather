@@ -98,15 +98,9 @@ include('Common/Templates/head.php');
         <tr>
             <th class="Main">Weather data import / export</th>
         </tr>
-        <tr>
-            <td>
-                Select completed sessions to export.
-                Open sessions are not listed.
-                Check the research status before including Test
-                or Excluded sessions.
-            </td>
-        </tr>
     </table>
+
+    <h2>Export Weather Session</h2>
 
     <p>
         <button type="button" id="select-all-sessions">Select all</button>
@@ -207,12 +201,13 @@ include('Common/Templates/head.php');
     </div>
 
     <p>
-        <button type="submit">Export selected sessions (JSON)</button>
-    </p>
+        <button type="submit" name="export_format" value="json">
+            JSON
+        </button>
 
-    <p>
-        One session downloads as a JSON file.
-        Multiple sessions download as a ZIP containing one JSON file per session.
+        <button type="submit" name="export_format" value="csv">
+            CSV
+        </button>
     </p>
 
     <?php if ($exportError !== ''): ?>
@@ -273,14 +268,7 @@ include('Common/Templates/head.php');
 })();
 </script>
 
-<h2>Preview a weather-session import</h2>
-
-<p>
-    Select a JSON session export or a ZIP containing JSON session exports.
-    This checks the files and displays previews without importing them.
-    Maximum upload: 20 MiB. ZIPs may contain up to 20 sessions,
-    totalling no more than 20 MiB uncompressed.
-</p>
+<h2>Import Weather Session</h2>
 
 <form
     method="post"
@@ -300,7 +288,7 @@ include('Common/Templates/head.php');
     >
 
     <p>
-        <label for="weather-package">Weather-session JSON or ZIP file:</label>
+        <label for="weather-package"></label>
         <input
             type="file"
             id="weather-package"

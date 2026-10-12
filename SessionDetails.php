@@ -11,6 +11,7 @@ require_once(__DIR__ . '/Lib/schema.php');
 require_once(__DIR__ . '/Lib/summary.php');
 require_once(__DIR__ . '/Lib/sessions.php');
 require_once(__DIR__ . '/Lib/transfer.php');
+require_once(__DIR__ . '/Lib/metadata.php');
 
 $sessionInput = $_GET['session_id'] ?? '';
 
@@ -65,6 +66,25 @@ if ($session) {
         ?? null;
 
     unset($_SESSION['archeryweather_status_feedback'][$statusSessionId]);
+}
+
+$metadataFeedback = null;
+
+if ($session) {
+    $metadataSessionId = (int) $session['id'];
+
+    if (empty($_SESSION['archeryweather_metadata_tokens'][$metadataSessionId])) {
+        $_SESSION['archeryweather_metadata_tokens'][$metadataSessionId] =
+            bin2hex(random_bytes(32));
+    }
+
+    $metadataFeedback =
+        $_SESSION['archeryweather_metadata_feedback'][$metadataSessionId]
+        ?? null;
+
+    unset(
+        $_SESSION['archeryweather_metadata_feedback'][$metadataSessionId]
+    );
 }
 
 $collectionMessage = '';
@@ -515,6 +535,12 @@ if ($quality) {
 }
 
 echo '</table>';
+
+resultspack_weather_metadata_render_editor(
+    $session,
+    $_SESSION['archeryweather_metadata_tokens'][$session['id']],
+    $metadataFeedback
+);
 
 if ($session['ended_epoch'] === null) {
     echo '<form method="post" action="SessionEnd.php">';

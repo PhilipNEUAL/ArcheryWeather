@@ -23,3 +23,8 @@ $ret['ARCHERYWEATHER'][] =
     'Import / Export|'
     . $CFG->ROOT_DIR
     . 'Modules/Custom/ArcheryWeather/WeatherTransfer.php';
+
+$ret['ARCHERYWEATHER'][] =
+    'Session cleanup|'
+    . $CFG->ROOT_DIR
+    . 'Modules/Custom/ArcheryWeather/SessionCleanup.php';

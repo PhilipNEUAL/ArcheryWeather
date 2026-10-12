@@ -341,3 +341,273 @@ function resultspack_weather_save_timing_correction(
         );
     }
 }
+
+// Save direction correction and its audit entry together.
+// Returns true when changed, or false when angle and method are unchanged.
+function resultspack_weather_save_direction_correction(
+    $sessionId,
+    $verifiedBearing,
+    $verification,
+    $reason,
+    $expectedCorrection,
+    $expectedVerification,
+    $expectedAuditId
+) {
+    $sessionId = filter_var(
+        $sessionId,
+        FILTER_VALIDATE_INT,
+        array('options' => array('min_range' => 1))
+    );
+
+    $expectedAuditId = filter_var(
+        $expectedAuditId,
+        FILTER_VALIDATE_INT,
+        array('options' => array('min_range' => 0))
+    );
+
+    if ($sessionId === false || $expectedAuditId === false) {
+        throw new InvalidArgumentException(
+            'Invalid session information. Reload the direction page.'
+        );
+    }
+
+    if (
+        !is_numeric($verifiedBearing)
+        || !is_finite((float) $verifiedBearing)
+        || (float) $verifiedBearing < 0
+        || (float) $verifiedBearing > 359.99
+    ) {
+        throw new InvalidArgumentException(
+            'The verified bearing must be between 0 and 359.99 degrees.'
+        );
+    }
+
+    $verifiedCents = (int) round((float) $verifiedBearing * 100);
+
+    if (abs((float) $verifiedBearing * 100 - $verifiedCents) > 0.000001) {
+        throw new InvalidArgumentException(
+            'Please enter the verified bearing with no more than two decimal places.'
+        );
+    }
+
+    $allowedMethods = array(
+        'map_satellite',
+        'second_compass',
+        'known_site_alignment',
+        'surveyed_bearing',
+        'other',
+    );
+
+    if (!in_array($verification, $allowedMethods, true)) {
+        throw new InvalidArgumentException(
+            'Please choose an independent verification method.'
+        );
+    }
+
+    if (
+        !is_numeric($expectedCorrection)
+        || !is_finite((float) $expectedCorrection)
+        || abs((float) $expectedCorrection) > 360
+        || !is_string($expectedVerification)
+    ) {
+        throw new InvalidArgumentException(
+            'Invalid original direction information. Reload the direction page.'
+        );
+    }
+
+    $expectedCents = (int) round((float) $expectedCorrection * 100);
+
+    if (!is_string($reason)) {
+        throw new InvalidArgumentException(
+            'Please enter a reason for the correction.'
+        );
+    }
+
+    $reason = trim($reason);
+
+    if (
+        $reason === ''
+        || preg_match('/\A.{1,2000}\z/us', $reason) !== 1
+    ) {
+        throw new InvalidArgumentException(
+            'Please enter a reason of between 1 and 2000 characters.'
+        );
+    }
+
+    global $WRIT_CON;
+
+    if (!$WRIT_CON) {
+        $WRIT_CON = safe_w_con();
+    }
+
+    $connection = $WRIT_CON;
+    $transactionStarted = false;
+
+    $query = function ($sql) use ($connection) {
+        $result = mysqli_query($connection, $sql);
+
+        if ($result === false) {
+            throw new RuntimeException(
+                'Direction database operation failed.'
+            );
+        }
+
+        return $result;
+    };
+
+    try {
+        if (!mysqli_begin_transaction($connection)) {
+            throw new RuntimeException(
+                'Could not start direction transaction.'
+            );
+        }
+
+        $transactionStarted = true;
+
+        $result = $query(
+            "SELECT CrwsEndedEpoch, CrwsShootingBearing, "
+            . "CrwsDirectionCorrection, CrwsDirectionVerification "
+            . "FROM CustomArcheryWeatherSessions "
+            . "WHERE CrwsId=" . $sessionId . " FOR UPDATE"
+        );
+
+        $row = mysqli_fetch_assoc($result);
+        mysqli_free_result($result);
+
+        if (!$row || $row['CrwsEndedEpoch'] === null) {
+            throw new InvalidArgumentException(
+                'Direction corrections require an existing completed session.'
+            );
+        }
+
+        if ($row['CrwsShootingBearing'] === null) {
+            throw new InvalidArgumentException(
+                'This session has no original shooting bearing to correct.'
+            );
+        }
+
+        // Read the latest audit entry while holding the session lock.
+        $result = $query(
+            "SELECT CrwdcId "
+            . "FROM CustomArcheryWeatherDirectionCorrections "
+            . "WHERE CrwdcSession=" . $sessionId
+            . " ORDER BY CrwdcId DESC LIMIT 1 FOR UPDATE"
+        );
+
+        $auditRow = mysqli_fetch_assoc($result);
+        mysqli_free_result($result);
+
+        $latestAuditId = $auditRow ? (int) $auditRow['CrwdcId'] : 0;
+
+        $oldCents = (int) round(
+            (float) $row['CrwsDirectionCorrection'] * 100
+        );
+
+        $oldVerification = (string) $row['CrwsDirectionVerification'];
+
+        if (
+            $latestAuditId !== $expectedAuditId
+            || $oldCents !== $expectedCents
+            || $oldVerification !== $expectedVerification
+        ) {
+            throw new InvalidArgumentException(
+                'The direction reference has changed since you opened this form. '
+                . 'Reload the page and review the latest values.'
+            );
+        }
+
+        // Calculate from the ORIGINAL bearing, not the previous correction.
+        // Integer hundredths of a degree avoid floating-point drift.
+        $recordedCents = (int) round(
+            (float) $row['CrwsShootingBearing'] * 100
+        );
+
+        $recordedNormalised = (
+            ($recordedCents % 36000) + 36000
+        ) % 36000;
+
+        $newCents = (
+            ($verifiedCents - $recordedNormalised + 54000) % 36000
+        ) - 18000;
+
+        // Match the existing helper's convention for an exact half-turn.
+        if ($newCents === -18000) {
+            $newCents = 18000;
+        }
+
+        if (
+            $newCents === $oldCents
+            && $verification === $oldVerification
+        ) {
+            if (!mysqli_rollback($connection)) {
+                throw new RuntimeException(
+                    'Could not close direction transaction.'
+                );
+            }
+
+            $transactionStarted = false;
+            return false;
+        }
+
+        $recordedSql = number_format($recordedCents / 100, 2, '.', '');
+        $verifiedSql = number_format($verifiedCents / 100, 2, '.', '');
+        $oldSql = number_format($oldCents / 100, 2, '.', '');
+        $newSql = number_format($newCents / 100, 2, '.', '');
+
+        $verificationSql = "'"
+            . mysqli_real_escape_string($connection, $verification)
+            . "'";
+
+        $reasonSql = "'"
+            . mysqli_real_escape_string($connection, $reason)
+            . "'";
+
+        $query(
+            "UPDATE CustomArcheryWeatherSessions SET "
+            . "CrwsDirectionCorrection=" . $newSql . ", "
+            . "CrwsDirectionVerification=" . $verificationSql
+            . " WHERE CrwsId=" . $sessionId
+        );
+
+        $query(
+            "INSERT INTO CustomArcheryWeatherDirectionCorrections ("
+            . "CrwdcSession, CrwdcOldCorrection, CrwdcNewCorrection, "
+            . "CrwdcRecordedBearing, CrwdcVerifiedBearing, "
+            . "CrwdcVerification, CrwdcReason, CrwdcCreated"
+            . ") VALUES ("
+            . $sessionId . ", "
+            . $oldSql . ", " . $newSql . ", "
+            . $recordedSql . ", " . $verifiedSql . ", "
+            . $verificationSql . ", " . $reasonSql
+            . ", UTC_TIMESTAMP())"
+        );
+
+        if (!mysqli_commit($connection)) {
+            throw new RuntimeException(
+                'Could not commit direction transaction.'
+            );
+        }
+
+        $transactionStarted = false;
+        return true;
+    } catch (Throwable $exception) {
+        if ($transactionStarted) {
+            try {
+                mysqli_rollback($connection);
+            } catch (Throwable $rollbackException) {
+                // Report the original failure below.
+            }
+        }
+
+        if ($exception instanceof InvalidArgumentException) {
+            throw $exception;
+        }
+
+        throw new RuntimeException(
+            'The direction correction could not be confirmed as saved. '
+            . 'Reload the direction page and check its current values and audit trail.',
+            0,
+            $exception
+        );
+    }
+}

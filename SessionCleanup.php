@@ -60,20 +60,17 @@ include('Common/Templates/head.php');
 <h2>Weather session cleanup</h2>
 
 <p>
-    Only completed Test and Excluded sessions are listed.
-    Real sessions and sessions still running cannot be deleted here.
+    Only Test and Excluded sessions can be deleted.
 </p>
 
 <p>
-    Before deleting sessions, you can keep a complete backup using
+    Please consider making a backup using
     <a href="WeatherTransfer.php">Import / Export &nearr;</a>.
-    Choose JSON for a backup that can be imported again.
 </p>
 
 <p>
     <strong><?php echo count($candidates); ?> eligible session(s).</strong>
-    Select sessions, then review the selection before deleting anything.
-</p>
+    </p>
 
 <style>
 #weather-cleanup tbody tr:nth-child(odd) > td {
@@ -189,11 +186,6 @@ include('Common/Templates/head.php');
         </tfoot>
     </table>
 </div>
-
-<p>
-    Observation counts include readings outside corrected session windows.
-    Cleanup will also remove the linked events and correction histories.
-</p>
 
     <p>
         <button type="submit" id="cleanup-review" disabled>

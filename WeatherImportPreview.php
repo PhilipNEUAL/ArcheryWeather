@@ -330,30 +330,19 @@ if ($error !== '') {
 
         echo '</select></p>';
 
-        echo '<p>Check the destination before importing. '
-            . 'A new local session ID will be assigned.</p>';
     }
-
-    echo '<p><strong>No session has been imported.</strong> '
-        . 'These are matching suggestions only. No existing records have been changed.</p>';
-
-    echo '<p>Readings outside the current session window are retained. '
-        . 'The fingerprint checks session identity; it does not authenticate '
-        . 'the file or verify every reading.</p>';
-    } // End each session preview.
+}
 
     if ($selectableCount > 0) {
         echo '<p><strong>'
             . $selectableCount
-            . ' new session(s) ready to import.</strong> '
-            . 'Check the destination competitions above before continuing.</p>';
+            . ' new session(s) ready to import.</strong></p>';
 
         echo '<p><button type="submit">'
             . 'Import new sessions'
             . '</button></p>';
 
-        echo '<p>This preview expires after 30 minutes. '
-            . 'Opening another successful preview replaces it.</p>';
+        echo '<p>This preview expires after 30 minutes.</p>';
     } else {
         echo '<p><strong>No new sessions are available to import from this upload.</strong></p>';
     }

@@ -50,6 +50,23 @@ if (empty($_SESSION['archeryweather_collect_token'])) {
         bin2hex(random_bytes(32));
 }
 
+$statusFeedback = null;
+
+if ($session) {
+    $statusSessionId = (int) $session['id'];
+
+    if (empty($_SESSION['archeryweather_status_tokens'][$statusSessionId])) {
+        $_SESSION['archeryweather_status_tokens'][$statusSessionId] =
+            bin2hex(random_bytes(32));
+    }
+
+    $statusFeedback =
+        $_SESSION['archeryweather_status_feedback'][$statusSessionId]
+        ?? null;
+
+    unset($_SESSION['archeryweather_status_feedback'][$statusSessionId]);
+}
+
 $collectionMessage = '';
 
 if ($session) {
@@ -195,13 +212,66 @@ echo '</tr>';
 
 echo '<tr>';
 echo '<td class="Bold">Research status</td>';
-echo '<td>'
+echo '<td>';
+
+echo '<p>Current status: <strong>'
+    . htmlspecialchars(ucfirst($session['research_status']))
+    . '</strong></p>';
+
+if ($statusFeedback !== null) {
+    echo '<p role="status" style="color:'
+        . ($statusFeedback['ok'] ? '#216b32' : '#a12622')
+        . '"><strong>'
+        . htmlspecialchars($statusFeedback['message'], ENT_QUOTES, 'UTF-8')
+        . '</strong></p>';
+}
+
+echo '<form method="post" action="SessionStatusSave.php">';
+
+echo '<input type="hidden" name="session_id" value="'
+    . (int) $session['id'] . '">';
+
+echo '<input type="hidden" name="form_token" value="'
     . htmlspecialchars(
-        ucfirst(
-            $session['research_status']
-        )
+        $_SESSION['archeryweather_status_tokens'][$session['id']],
+        ENT_QUOTES,
+        'UTF-8'
     )
-    . '</td>';
+    . '">';
+
+echo '<input type="hidden" name="expected_status" value="'
+    . htmlspecialchars($session['research_status'], ENT_QUOTES, 'UTF-8')
+    . '">';
+
+echo '<label for="research-status">New status:</label> ';
+echo '<select id="research-status" name="research_status">';
+
+foreach (
+    array('real' => 'Real', 'test' => 'Test', 'excluded' => 'Excluded')
+    as $value => $label
+) {
+    echo '<option value="' . $value . '"'
+        . ($session['research_status'] === $value ? ' selected' : '')
+        . '>' . $label . '</option>';
+}
+
+echo '</select>';
+
+if ($session['research_status'] === 'real') {
+    echo '<p><label>'
+        . '<input type="checkbox" name="confirm_unprotect" value="1"> '
+        . 'If changing to Test or Excluded, I understand that this session '
+        . 'will become eligible for permanent cleanup once completed.'
+        . '</label></p>';
+}
+
+echo '<p><button type="submit">Save research status</button></p>';
+
+echo '<p>Changing status preserves the observations, judge events '
+    . 'and correction histories. It does not delete the session.</p>';
+
+echo '</form>';
+echo '</td>';
 echo '</tr>';
 
 echo '<tr>';

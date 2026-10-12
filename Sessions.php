@@ -30,7 +30,7 @@ foreach ($tournaments as $tournament) {
         . $tournament['name'];
 }
 
-echo '<table class="Tabella freeWidth">';
+echo '<table id="weather-sessions" class="Tabella freeWidth">';
 
 echo '<tr>';
 echo '<th class="Main" colspan="7">';
@@ -119,7 +119,7 @@ if (!$weatherSessions) {
                 $session['id']
             );
 
-        echo '<tr>';
+        echo '<tr class="weather-session-row">';
 
         echo '<td>';
 
@@ -170,3 +170,20 @@ if (!$weatherSessions) {
 echo '</table>';
 
 include('Common/Templates/tail.php');
+
+echo <<<'HTML'
+<style>
+#weather-sessions tr.weather-session-row:nth-child(odd) > td {
+    background-color: #f5f9fd;
+}
+
+#weather-sessions tr.weather-session-row:nth-child(even) > td {
+    background-color: #e7f0f9;
+}
+
+#weather-sessions tr.weather-session-row:hover > td,
+#weather-sessions tr.weather-session-row:focus-within > td {
+    background-color: #cfe3f7;
+}
+</style>
+HTML;

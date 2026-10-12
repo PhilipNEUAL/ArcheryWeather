@@ -230,9 +230,19 @@ echo '</tr>';
 
 echo '<tr>';
 echo '<td class="Bold">Session records</td>';
-echo '<td><a href="SessionDetails.php?session_id='
+echo '<td>';
+
+echo '<a href="SessionDetails.php?session_id='
     . (int) $session['id']
-    . '">Session details and data quality ↗</a></td>';
+    . '">Session details and data quality ↗</a>';
+
+echo '<br>';
+
+echo '<a href="SessionEvents.php?session_id='
+    . (int) $session['id']
+    . '">Judge decisions and weather events ↗</a>';
+
+echo '</td>';
 echo '</tr>';
 
 echo '</table>';

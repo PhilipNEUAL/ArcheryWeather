@@ -461,8 +461,10 @@ if ($session['ended_epoch'] === null) {
         . '">';
 
     echo '<p><strong>This session is open.</strong> '
-        . 'Ending it records the current time. '
-        . 'This does not yet download weather observations.</p>';
+        . 'Ending it records the current time, then attempts to '
+        . 'retrieve its observations from Tempest. '
+        . 'The session stays ended if retrieval fails, '
+        . 'and you can retry afterwards.</p>';
 
     echo '<p><button type="submit">'
         . 'End session #' . (int) $session['id'] . ' now'

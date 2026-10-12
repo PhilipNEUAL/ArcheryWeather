@@ -4,6 +4,9 @@ require_once(__DIR__ . '/Lib/bootstrap.php');
 require_once(__DIR__ . '/Lib/config.php');
 require_once(__DIR__ . '/Lib/schema.php');
 require_once(__DIR__ . '/Lib/sessions.php');
+require_once(__DIR__ . '/Lib/observations.php');
+require_once(__DIR__ . '/Lib/tempest.php');
+require_once(__DIR__ . '/Lib/collection.php');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Allow: POST');
@@ -51,6 +54,8 @@ if (!$session) {
 }
 
 // Repeated submissions must not change an existing end time.
+$endedNow = false;
+
 if ($session['ended_epoch'] === null) {
     $endedEpoch = time();
 
@@ -59,6 +64,7 @@ if ($session['ended_epoch'] === null) {
         exit('The current time is before the session start. Check the server clock.');
     }
 
+    // Save the end time before attempting any network request.
     $result = safe_w_sql(
         "UPDATE CustomArcheryWeatherSessions "
         . "SET CrwsEndedEpoch=" . $endedEpoch
@@ -70,9 +76,32 @@ if ($session['ended_epoch'] === null) {
         http_response_code(500);
         exit('The session could not be ended. Reload its details and try again.');
     }
+
+    // Only the request that actually ended the session triggers retrieval.
+    global $WRIT_CON;
+    $endedNow = mysqli_affected_rows($WRIT_CON) === 1;
 }
 
-session_write_close();
+if ($endedNow) {
+    // Keep a useful message even if retrieval is interrupted.
+    $_SESSION['archeryweather_collection_messages'][$sessionId] =
+        'Session ended. If no retrieval result appears, use '
+        . 'Retrieve observations from Tempest to retry.';
+
+    session_write_close();
+
+    $message = 'Session ended. '
+        . resultspack_weather_collection_message($sessionId);
+
+    session_start();
+
+    $_SESSION['archeryweather_collection_messages'][$sessionId] =
+        $message;
+}
+
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
 
 header(
     'Location: SessionDetails.php?session_id=' . (int) $sessionId,

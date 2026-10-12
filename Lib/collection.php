@@ -203,3 +203,36 @@ function resultspack_weather_import_session_observations($sessionId)
         'skipped' => $skipped,
     );
 }
+
+// Run retrieval and return a message for the session details page.
+function resultspack_weather_collection_message($sessionId)
+{
+    try {
+        $result = resultspack_weather_import_session_observations(
+            $sessionId
+        );
+    } catch (Exception $exception) {
+        return 'Retrieval did not finish. Some readings may have '
+            . 'been saved. Use Retrieve observations from Tempest to retry.';
+    }
+
+    if (empty($result['ok'])) {
+        return 'Retrieval failed: '
+            . ($result['error'] ?? 'An unexpected error occurred.')
+            . ' Use Retrieve observations from Tempest to retry.';
+    }
+
+    $received = (int) $result['received'];
+    $added = (int) $result['added'];
+    $skipped = (int) $result['skipped'];
+
+    if ($received === 0) {
+        return 'Tempest returned no observations for this session. '
+            . 'Any observations already stored have been kept.';
+    }
+
+    return 'Tempest returned ' . $received . ' historical readings. '
+        . $added . ' new observations added; '
+        . $skipped . ' readings skipped. '
+        . 'Readings already stored were kept unchanged.';
+}

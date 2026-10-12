@@ -17,6 +17,21 @@ $session =
         $sessionId
     );
 
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+if (empty($_SESSION['archeryweather_timing_token'])) {
+    $_SESSION['archeryweather_timing_token'] =
+        bin2hex(random_bytes(32));
+}
+
+$timingFeedback =
+    $_SESSION['archeryweather_timing_feedback'][$sessionId]
+    ?? null;
+
+unset($_SESSION['archeryweather_timing_feedback'][$sessionId]);
+
 $PAGE_TITLE = 'Session Timing';
 
 include('Common/Templates/head.php');
@@ -128,7 +143,7 @@ echo '</th>';
 echo '</tr>';
 
 echo '<tr>';
-echo '<th class="Title">Recorded</th>';
+echo '<th class="Title">Recorded (UTC)</th>';
 echo '<th class="Title">Previous start</th>';
 echo '<th class="Title">Previous end</th>';
 echo '<th class="Title">New start</th>';
@@ -211,12 +226,33 @@ echo '</table>';
 // New timing correction form.
     echo '<br>';
 
-    echo '<form method="post">';
+    echo '<form id="timing-correction-form" '
+        . 'method="post" action="SessionTimingSave.php">';
 
     echo '<input type="hidden" name="session_id" value="'
         . (int) $session['id']
         . '">';
 
+    echo '<input type="hidden" name="form_token" value="'
+        . htmlspecialchars(
+            $_SESSION['archeryweather_timing_token'],
+            ENT_QUOTES,
+            'UTF-8'
+        )
+        . '">';
+
+    echo '<input type="hidden" name="expected_started_epoch" value="'
+        . (int) $session['started_epoch']
+        . '">';
+
+    echo '<input type="hidden" name="expected_ended_epoch" value="'
+        . (
+            $session['ended_epoch'] !== null
+                ? (int) $session['ended_epoch']
+                : ''
+        )
+        . '">';
+        
     echo '<table class="Tabella freeWidth">';
 
     echo '<tr>';
@@ -250,9 +286,16 @@ echo '</table>';
                 'Y-m-d\TH:i:s'
             );
 
+        if (!empty($timingFeedback['error'])) {
+            $startInputValue = $timingFeedback['started_local'];
+            $endInputValue = $timingFeedback['ended_local'];
+        }
+
         echo '<tr>';
         echo '<td colspan="2">';
         echo 'Use this form if the recorded start or end of the weather session needs correcting. ';
+        echo 'The previous times and stated reason will be preserved in the audit trail. ';
+        echo 'Stored observations will not be deleted; summaries and graphs will use the corrected time window. ';
         echo 'Times are entered in ';
         echo '<b>'
             . htmlspecialchars($session['timezone'])
@@ -294,8 +337,16 @@ echo '</table>';
 
         echo '<textarea ';
         echo 'name="correction_reason" ';
-        echo 'rows="3" required ';
+        echo 'rows="3" maxlength="2000" required ';
         echo 'placeholder="Explain why the session times need correcting">';
+        
+        if (!empty($timingFeedback['error'])) {
+            echo htmlspecialchars(
+                $timingFeedback['reason'],
+                ENT_QUOTES,
+                'UTF-8'
+            );
+        }        
         echo '</textarea>';
 
         echo '</td>';
@@ -305,12 +356,7 @@ echo '</table>';
         echo '<td colspan="2">';
 
         echo '<input type="submit" ';
-        echo 'value="Save timing correction" ';
-        echo 'disabled>';
-
-        echo '<br><small>';
-        echo 'Saving is not yet enabled.';
-        echo '</small>';
+        echo 'value="Save timing correction">';
 
         echo '</td>';
         echo '</tr>';
@@ -319,5 +365,65 @@ echo '</table>';
     echo '</table>';
 
     echo '</form>';
+
+    echo <<<'HTML'
+    <p id="timing-save-progress" role="status" hidden>
+        Please wait: saving the correction, then checking Tempest
+        if the times have changed…
+    </p>
+
+    <script>
+    (() => {
+        const form = document.getElementById('timing-correction-form');
+        const button = form.querySelector('input[type="submit"]');
+        const progress = document.getElementById('timing-save-progress');
+
+        if (!button) {
+            return;
+        }
+
+        form.addEventListener('submit', (event) => {
+            if (form.dataset.saving === 'yes') {
+                event.preventDefault();
+                return;
+            }
+
+            form.dataset.saving = 'yes';
+            button.disabled = true;
+            button.value = 'Saving…';
+            progress.hidden = false;
+        });
+
+        // Restore the controls if the browser brings this page back from history.
+        window.addEventListener('pageshow', () => {
+            delete form.dataset.saving;
+            button.disabled = false;
+            button.value = 'Save timing correction';
+            progress.hidden = true;
+        });
+    })();
+    </script>
+    HTML;
+
+    if ($timingFeedback) {
+    $feedbackColour = !empty($timingFeedback['error'])
+        ? '#a12622'
+        : '#245b2a';
+
+    echo '<div id="timing-feedback" tabindex="-1" role="status" '
+        . 'style="padding:12px;margin:12px 0;border:2px solid '
+        . $feedbackColour . ';color:' . $feedbackColour . ';">'
+        . htmlspecialchars(
+            $timingFeedback['message'],
+            ENT_QUOTES,
+            'UTF-8'
+        )
+        . '</div>';
+
+    echo '<script>'
+        . 'document.getElementById("timing-feedback").focus();'
+        . 'document.getElementById("timing-feedback").scrollIntoView({block:"center"});'
+        . '</script>';
+    }
 
 include('Common/Templates/tail.php');

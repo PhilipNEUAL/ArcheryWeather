@@ -53,36 +53,7 @@ if (!$session) {
     exit('Weather session not found.');
 }
 
-try {
-    $result = resultspack_weather_import_session_observations(
-        $sessionId
-    );
-} catch (Exception $exception) {
-    $result = array(
-        'ok' => false,
-        'error' => 'Retrieval did not finish. Some readings may have '
-            . 'been saved; retrying is safe.',
-    );
-}
-
-if (!empty($result['ok'])) {
-    $received = (int) $result['received'];
-    $added = (int) $result['added'];
-    $skipped = (int) $result['skipped'];
-
-    if ($received === 0) {
-        $message = 'Tempest returned no observations for this session. '
-            . 'Any observations already stored have been kept.';
-    } else {
-        $message = 'Tempest returned ' . $received . ' readings. '
-            . $added . ' new observations added; '
-            . $skipped . ' readings skipped. '
-            . 'Readings already stored were kept unchanged.';
-    }
-} else {
-    $message = 'Retrieval failed: '
-        . ($result['error'] ?? 'An unexpected error occurred.');
-}
+$message = resultspack_weather_collection_message($sessionId);
 
 // Keep messages separate if different sessions are open in different tabs.
 $_SESSION['archeryweather_collection_messages'][$sessionId] =

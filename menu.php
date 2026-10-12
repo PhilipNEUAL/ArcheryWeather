@@ -14,7 +14,12 @@ $ret['ARCHERYWEATHER'][] =
     . $CFG->ROOT_DIR
     . 'Modules/Custom/ArcheryWeather/Sessions.php';
 
-$ret['ARCHERYWEATHER'][] =
+/* $ret['ARCHERYWEATHER'][] =
     'Diagnostics|'
     . $CFG->ROOT_DIR
-    . 'Modules/Custom/ArcheryWeather/index.php';
+    . 'Modules/Custom/ArcheryWeather/index.php'; */
+
+$ret['ARCHERYWEATHER'][] =
+    'Import / Export|'
+    . $CFG->ROOT_DIR
+    . 'Modules/Custom/ArcheryWeather/WeatherTransfer.php';

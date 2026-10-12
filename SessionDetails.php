@@ -10,6 +10,7 @@ require_once(__DIR__ . '/Lib/quality.php');
 require_once(__DIR__ . '/Lib/schema.php');
 require_once(__DIR__ . '/Lib/summary.php');
 require_once(__DIR__ . '/Lib/sessions.php');
+require_once(__DIR__ . '/Lib/transfer.php');
 
 $sessionInput = $_GET['session_id'] ?? '';
 

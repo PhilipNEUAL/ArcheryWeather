@@ -388,8 +388,10 @@ foreach ($environmentGraphs as $graph) {
 
 echo '</details>';
 
-echo '<script src="js/station_status.js?v=session-status-1" defer></script>';
+// Graph downloads are available for open and completed sessions.
+echo '<script src="js/graph_download.js?v=1" defer></script>';
 
+// Live monitoring and collection are only for open sessions.
 if ($session['ended_epoch'] === null) {
     echo '<script src="js/station_status.js?v=session-status-1" defer></script>';
     echo '<script src="js/live_collection.js?v=4" defer></script>';

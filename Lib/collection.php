@@ -49,9 +49,37 @@ function resultspack_weather_import_session_observations(
         );
     }
 
+    $fetchStart = $start;
+
+    if ($allowOpen) {
+        $latestResult = safe_r_sql(
+            "SELECT MAX(CrwoTimestamp) AS LatestTimestamp"
+            . " FROM CustomArcheryWeatherObservations"
+            . " WHERE CrwoSession=" . (int) $session['id']
+            . " AND CrwoTimestamp>=" . $start
+            . " AND CrwoTimestamp<=" . $end
+        );
+
+        $latestRow = safe_fetch($latestResult);
+
+        if (
+            $latestRow
+            && $latestRow->LatestTimestamp !== null
+        ) {
+            // Recheck a short overlap for delayed observations.
+            $overlapSeconds = 5 * 60;
+
+            $fetchStart = max(
+                $start,
+                (int) $latestRow->LatestTimestamp
+                    - $overlapSeconds
+            );
+        }
+    }
+
     $response = resultspack_weather_fetch_observations(
         $session['station_id'],
-        $start,
+        $fetchStart,
         $end
     );
 

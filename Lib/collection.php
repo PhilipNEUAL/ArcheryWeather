@@ -1,12 +1,24 @@
 <?php
 
-// Retrieve and store observations for one completed session.
-// Existing readings are preserved when the same timestamp is retrieved again.
-function resultspack_weather_import_session_observations($sessionId)
-{
-    $session = resultspack_weather_get_completed_session($sessionId);
+// Retrieve and store observations for a weather session.
+// Open-session collection must be explicitly requested.
+// Existing readings are preserved when retrieved again.
+function resultspack_weather_import_session_observations(
+    $sessionId,
+    $allowOpen = false
+) {
+    $session = resultspack_weather_get_session($sessionId);
 
     if (!$session) {
+        return array(
+            'ok' => false,
+            'error' => 'Weather session not found.',
+        );
+    }
+
+    $isOpen = $session['ended_epoch'] === null;
+
+    if ($isOpen && !$allowOpen) {
         return array(
             'ok' => false,
             'error' => 'Please end the session before retrieving observations.',
@@ -14,7 +26,21 @@ function resultspack_weather_import_session_observations($sessionId)
     }
 
     $start = (int) $session['started_epoch'];
-    $end = (int) $session['ended_epoch'];
+
+    // For an open session, retrieve only as far as the current time.
+    $end = $isOpen
+        ? time()
+        : (int) $session['ended_epoch'];
+
+    // A newly started session may not have an observation window yet.
+    if ($isOpen && $start > 0 && $end === $start) {
+        return array(
+            'ok' => true,
+            'received' => 0,
+            'added' => 0,
+            'skipped' => 0,
+        );
+    }
 
     if ($start <= 0 || $end <= $start) {
         return array(
@@ -120,6 +146,32 @@ function resultspack_weather_import_session_observations($sessionId)
         'strike_distance' => 'CrwoStrikeDistance',
     );
 
+    if ($allowOpen) {
+        $currentSession = resultspack_weather_get_session(
+            $session['id']
+        );
+
+        if (!$currentSession) {
+            return array(
+                'ok' => false,
+                'error' => 'Weather session no longer exists.',
+            );
+        }
+
+        if ($currentSession['ended_epoch'] !== null) {
+            return array(
+                'ok' => false,
+                'session_closed' => true,
+                'error' => 'This session ended during retrieval.',
+            );
+        }
+
+        $start = max(
+            $start,
+            (int) $currentSession['started_epoch']
+        );
+    }
+    
     $before = resultspack_weather_count_observations($session['id']);
     $skipped = 0;
 
@@ -177,13 +229,30 @@ function resultspack_weather_import_session_observations($sessionId)
         $sqlValues[] = StrSafe_DB(gmdate('Y-m-d H:i:s'));
 
         // On a duplicate session/timestamp, leave the existing row untouched.
-        $result = safe_w_sql(
+        $insertSql =
             "INSERT INTO CustomArcheryWeatherObservations ("
             . implode(',', $columns)
-            . ") VALUES ("
-            . implode(',', $sqlValues)
-            . ") ON DUPLICATE KEY UPDATE CrwoId=CrwoId"
-        );
+            . ") ";
+
+        if ($allowOpen) {
+            // Recheck the parent session as part of the insert itself.
+            $insertSql .=
+                "SELECT " . implode(',', $sqlValues)
+                . " FROM CustomArcheryWeatherSessions"
+                . " WHERE CrwsId=" . (int) $session['id']
+                . " AND CrwsEndedEpoch IS NULL"
+                . " AND CrwsStartedEpoch<=" . $timestamp
+                . " AND CrwsStationId="
+                . (int) $session['station_id'];
+        } else {
+            $insertSql .=
+                "VALUES (" . implode(',', $sqlValues) . ")";
+        }
+
+        $insertSql .=
+            " ON DUPLICATE KEY UPDATE CrwoId=CrwoId";
+
+        $result = safe_w_sql($insertSql);
 
         if ($result === false) {
             return array(

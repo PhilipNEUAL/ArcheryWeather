@@ -33,6 +33,17 @@ if ($sessionId === false) {
     http_response_code(404);
 }
 
+if ($session && $session['ended_epoch'] === null) {
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+
+    if (empty($_SESSION['archeryweather_collect_token'])) {
+        $_SESSION['archeryweather_collect_token'] =
+            bin2hex(random_bytes(32));
+    }
+}
+
 $PAGE_TITLE = $session
     ? 'Weather Session #' . $session['id']
     : 'Weather Session Not Found';
@@ -207,6 +218,41 @@ if ($session['ended_epoch'] === null) {
     echo '</tr>';
 }
 
+if ($session['ended_epoch'] === null) {
+    echo '<tr>';
+    echo '<td class="Bold">Observation collection</td>';
+    echo '<td>';
+
+    echo '<form id="live-collection-form" method="post" '
+        . 'action="SessionLiveCollect.php">';
+
+    echo '<input type="hidden" name="session_id" value="'
+        . (int) $session['id']
+        . '">';
+
+    echo '<input type="hidden" name="form_token" value="'
+        . htmlspecialchars(
+            $_SESSION['archeryweather_collect_token'],
+            ENT_QUOTES,
+            'UTF-8'
+        )
+        . '">';
+
+    echo '<button type="submit">'
+        . 'Retrieve observations now'
+        . '</button>';
+
+    echo '</form>';
+
+    echo '<p id="live-collection-status" role="status" '
+        . 'aria-live="polite">'
+        . 'Automatic collection starts when this viewer is open and visible.'
+        . '</p>';
+
+    echo '</td>';
+    echo '</tr>';
+}
+
 $effectiveShootingBearing =
     resultspack_weather_effective_shooting_bearing(
         $session
@@ -346,6 +392,7 @@ echo '<script src="js/station_status.js?v=session-status-1" defer></script>';
 
 if ($session['ended_epoch'] === null) {
     echo '<script src="js/station_status.js?v=session-status-1" defer></script>';
+    echo '<script src="js/live_collection.js?v=4" defer></script>';
 }
 
 include('Common/Templates/tail.php');

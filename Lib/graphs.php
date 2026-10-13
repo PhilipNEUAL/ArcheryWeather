@@ -676,7 +676,7 @@ if (count($windObservations) < 2) {
 
     echo '</div>';
 
-    echo '<div class="resultspack-muted" style="margin-top:6px">'
+    echo '<div style="margin-top:6px;color:#666;font-size:90%">'
         . 'The shaded band shows the minute-by-minute range between lull and gust. '
         . 'The blue line smooths the recorded average across five observations to show the underlying trend.'
         . '</div>';
@@ -708,80 +708,33 @@ function resultspack_weather_viewer_render_wind_rose($observations, $session)
     for ($i = 0; $i < 16; $i++) {
         $sectors[$i] = array(
             'count' => 0,
-            'speed_sum_kmh' => 0.0,
-            'speed_count' => 0,
         );
     }
 
     $directionObservationCount = 0;
-    $directionVectorX = 0.0;
-    $directionVectorY = 0.0;
 
     foreach ($observations as $observation) {
         if (
             !isset($observation['wind_dir'])
-            || $observation['wind_dir'] === null
             || !is_numeric($observation['wind_dir'])
         ) {
             continue;
         }
 
-        $direction =
-            resultspack_weather_effective_wind_direction(
-                $observation['wind_dir'],
-                $session
-            );
+        $direction = resultspack_weather_effective_wind_direction(
+            $observation['wind_dir'],
+            $session
+        );
 
         if ($direction === null) {
             continue;
         }
-
-        //Build a circular mean of the recorded FROM directions
-        $directionRadians = deg2rad($direction);
-
-        $directionVectorX += sin($directionRadians);
-        $directionVectorY += cos($directionRadians);
 
         $sectorIndex =
             ((int) floor(($direction + 11.25) / 22.5)) % 16;
 
         $sectors[$sectorIndex]['count']++;
         $directionObservationCount++;
-
-        if (
-            isset($observation['wind_avg'])
-            && $observation['wind_avg'] !== null
-            && is_numeric($observation['wind_avg'])
-        ) {
-            // Raw Tempest values are stored in mph.
-            // Convert only for display.
-            $sectors[$sectorIndex]['speed_sum_kmh'] +=
-                ((float) $observation['wind_avg']) * 1.609344;
-
-            $sectors[$sectorIndex]['speed_count']++;
-        }
-
-        $prevailingWindFrom = null;
-
-        if (
-            $directionObservationCount > 0
-            && (
-                abs($directionVectorX) > 0.000001
-                || abs($directionVectorY) > 0.000001
-            )
-        ) {
-            $prevailingWindFrom =
-                rad2deg(
-                    atan2(
-                        $directionVectorX,
-                        $directionVectorY
-                    )
-                );
-
-            if ($prevailingWindFrom < 0) {
-                $prevailingWindFrom += 360;
-            }
-        }
     }
 
     // Use the same corrected direction and variability threshold as the environmental summary.

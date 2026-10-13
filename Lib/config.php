@@ -27,13 +27,6 @@ function resultspack_weather_config()
     return $config;
 }
 
-function resultspack_weather_is_configured()
-{
-    $config = resultspack_weather_config();
-
-    return !empty($config['personal_access_token']);
-}
-
 // Return the configured timezone for weather sessions.
 function resultspack_weather_timezone()
 {

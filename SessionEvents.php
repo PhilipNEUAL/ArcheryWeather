@@ -456,6 +456,4 @@ if ($eventFeedback) {
         . '</script>';
 }
 
-//echo $backLink;
-
 include('Common/Templates/tail.php');

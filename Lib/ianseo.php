@@ -8,9 +8,12 @@ function resultspack_weather_fetch_tournament_list()
             ToId,
             ToCode,
             ToName,
+            ToNameShort,
             ToWhere,
+            ToVenue,
             ToWhenFrom,
-            ToWhenTo
+            ToWhenTo,
+            ToTypeName
         FROM Tournament
         ORDER BY ToWhenFrom DESC, ToId DESC"
     );
@@ -22,9 +25,12 @@ function resultspack_weather_fetch_tournament_list()
             'id' => (int) $row->ToId,
             'code' => (string) $row->ToCode,
             'name' => (string) $row->ToName,
+            'short_name' => (string) $row->ToNameShort,
             'where' => (string) $row->ToWhere,
+            'venue' => (string) $row->ToVenue,
             'date_from' => (string) $row->ToWhenFrom,
             'date_to' => (string) $row->ToWhenTo,
+            'type_name' => (string) $row->ToTypeName,
         );
     }
 

@@ -2,6 +2,7 @@
 
 require_once(__DIR__ . '/Lib/bootstrap.php');
 require_once(__DIR__ . '/Lib/config.php');
+require_once(__DIR__ . '/Lib/event_time.php');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Allow: POST');
@@ -48,6 +49,8 @@ if (
 $action = $_POST['event_action'] ?? '';
 $reason = $_POST['event_reason'] ?? '';
 $note = $_POST['event_note'] ?? '';
+$timeMode = $_POST['event_time_mode'] ?? 'now';
+$localTime = $_POST['event_local_time'] ?? '';
 
 $feedback = array(
     'error' => true,
@@ -55,6 +58,8 @@ $feedback = array(
     'action' => is_string($action) ? $action : '',
     'reason' => is_string($reason) ? $reason : '',
     'note' => is_string($note) ? $note : '',
+    'time_mode' => is_string($timeMode) ? $timeMode : 'specified',
+    'local_time' => is_string($localTime) ? $localTime : '',
 );
 
 $transactionStarted = false;
@@ -120,7 +125,7 @@ try {
 
     // Prevent the session being ended between our check and the insert.
     $result = $query(
-        "SELECT CrwsStartedEpoch, CrwsEndedEpoch "
+        "SELECT CrwsStartedEpoch, CrwsEndedEpoch, CrwsTimezone "
         . "FROM CustomArcheryWeatherSessions "
         . "WHERE CrwsId=" . $sessionId . " FOR UPDATE"
     );
@@ -132,18 +137,48 @@ try {
         throw new InvalidArgumentException('Weather session not found.');
     }
 
-    if ($session['CrwsEndedEpoch'] !== null) {
+    if (!in_array($timeMode, array('now', 'specified'), true)) {
         throw new InvalidArgumentException(
-            'This session has ended. No decision was recorded.'
+            'Choose Now or Specify event time.'
         );
     }
 
-    $timestamp = time();
+    $now = time();
+
+    if ($timeMode === 'now') {
+        if ($session['CrwsEndedEpoch'] !== null) {
+            throw new InvalidArgumentException(
+                'This session has ended. Choose Specify event time '
+                . 'and enter when the decision happened.'
+            );
+        }
+
+        $timestamp = $now;
+    } else {
+        $timestamp = resultspack_weather_event_parse_local_time(
+            $localTime,
+            $session['CrwsTimezone']
+        );
+    }
+
+    if ($timestamp > $now) {
+        throw new InvalidArgumentException(
+            'The decision time cannot be in the future.'
+        );
+    }
 
     if ($timestamp < (int) $session['CrwsStartedEpoch']) {
         throw new InvalidArgumentException(
-            'The server time is before the session start. '
-            . 'Check the server clock; no decision was recorded.'
+            'The decision time is before the current session start.'
+        );
+    }
+
+    if (
+        $session['CrwsEndedEpoch'] !== null
+        && $timestamp > (int) $session['CrwsEndedEpoch']
+    ) {
+        throw new InvalidArgumentException(
+            'The decision time is after the current session end.'
         );
     }
 
@@ -173,7 +208,7 @@ try {
     $feedback = array(
         'error' => false,
         'message' => 'Decision recorded: ' . ucfirst($action)
-            . '. The weather session remains open.',
+            . '. The session’s start and end times have not been changed.',
     );
 } catch (Throwable $exception) {
     if ($transactionStarted) {

@@ -23,7 +23,8 @@ function resultspack_weather_get_events($sessionId)
             CrweTimestamp,
             CrweAction,
             CrweReason,
-            CrweNote
+            CrweNote,
+            CrweCreated
         FROM CustomArcheryWeatherEvents
         WHERE CrweSession=" . $sessionId . "
         ORDER BY CrweTimestamp ASC, CrweId ASC"
@@ -47,6 +48,9 @@ function resultspack_weather_get_events($sessionId)
 
             'note' =>
                 (string) $row->CrweNote,
+
+            'created_at' =>
+                (string) $row->CrweCreated,
         );
     }
 

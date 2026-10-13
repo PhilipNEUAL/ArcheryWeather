@@ -6,6 +6,7 @@ require_once(__DIR__ . '/Lib/helpers.php');
 require_once(__DIR__ . '/Lib/schema.php');
 require_once(__DIR__ . '/Lib/sessions.php');
 require_once(__DIR__ . '/Lib/events.php');
+require_once(__DIR__ . '/Lib/event_time.php');
 
 $input = $_GET['session_id'] ?? '';
 
@@ -48,11 +49,22 @@ unset($_SESSION['archeryweather_event_feedback'][$sessionId]);
 $eventActionInput = '';
 $eventReasonInput = '';
 $eventNoteInput = '';
+$eventTimeModeInput =
+    $session && $session['ended_epoch'] === null
+        ? 'now'
+        : 'specified';
+
+$eventLocalTimeInput = '';
 
 if (!empty($eventFeedback['error'])) {
     $eventActionInput = $eventFeedback['action'];
     $eventReasonInput = $eventFeedback['reason'];
     $eventNoteInput = $eventFeedback['note'];
+    $eventTimeModeInput =
+        $eventFeedback['time_mode'] ?? $eventTimeModeInput;
+
+    $eventLocalTimeInput =
+        $eventFeedback['local_time'] ?? '';
 }
 
 $PAGE_TITLE = $session
@@ -122,7 +134,8 @@ echo '<div style="overflow-x:auto;max-width:100%;">';
 echo '<table class="Tabella freeWidth">';
 
 echo '<tr>';
-echo '<th class="Title" scope="col">Date and time</th>';
+echo '<th class="Title" scope="col">Event time</th>';
+echo '<th class="Title" scope="col">Recorded at (as stored)</th>';
 echo '<th class="Title" scope="col">Action</th>';
 echo '<th class="Title" scope="col">Reason</th>';
 echo '<th class="Title" scope="col">Notes</th>';
@@ -130,7 +143,7 @@ echo '<th class="Title" scope="col">Session window</th>';
 echo '</tr>';
 
 if (!$events) {
-    echo '<tr><td colspan="5">'
+    echo '<tr><td colspan="6">'
         . 'No judge decisions or weather events have been recorded for this session.'
         . '</td></tr>';
 } else {
@@ -159,6 +172,18 @@ if (!$events) {
                     $session['timezone'],
                     'd/m/Y H:i:s P'
                 ),
+                ENT_QUOTES,
+                'UTF-8'
+            )
+            . '</td>';
+
+        $recordedAt = trim((string) ($event['created_at'] ?? ''));
+
+        echo '<td style="white-space:nowrap;">'
+            . htmlspecialchars(
+                $recordedAt !== '' && $recordedAt !== '0000-00-00 00:00:00'
+                    ? $recordedAt
+                    : 'Not recorded',
                 ENT_QUOTES,
                 'UTF-8'
             )
@@ -197,7 +222,16 @@ if (!$events) {
 echo '</table>';
 echo '</div>';
 
-if ($session['ended_epoch'] === null) {
+echo '<p style="max-width:1000px;">'
+    . 'Event time shows when the decision happened, in the session timezone. '
+    . 'Recorded at shows when the entry was originally saved, '
+    . 'in YYYY-MM-DD HH:MM:SS format. '
+    . 'New ArcheryWeather entries use UTC; older imported entries '
+    . 'may use their original server timezone. '
+    . 'Importing an entry preserves its original recorded timestamp.'
+    . '</p>';
+
+{
     echo '<br>';
 
     echo '<form id="session-event-form" method="post" '
@@ -222,9 +256,72 @@ if ($session['ended_epoch'] === null) {
         . '</th></tr>';
 
     echo '<tr><td colspan="2">'
-        . 'The decision time will be recorded when you submit this form. '
-        . 'Recording a decision does not end the weather session.'
+        . 'Choose when the decision happened. '
+        . 'Its entry time is recorded separately. '
+        . 'Recording a decision does not change the session’s start or end.'
         . '</td></tr>';
+
+    echo '<tr><td><label for="event_time_mode">'
+        . 'Decision time</label></td><td>';
+
+    echo '<select id="event_time_mode" name="event_time_mode">';
+
+    if ($session['ended_epoch'] === null) {
+        echo '<option value="now"'
+            . ($eventTimeModeInput === 'now' ? ' selected' : '')
+            . '>Now — when submitted</option>';
+    }
+
+    echo '<option value="specified"'
+        . (
+            $eventTimeModeInput === 'specified'
+            || $session['ended_epoch'] !== null
+                ? ' selected'
+                : ''
+        )
+        . '>Specify event time</option>';
+
+    echo '</select></td></tr>';
+
+    echo '<tr id="event-local-time-row">'
+        . '<td><label for="event_local_time">'
+        . 'Event date and time</label></td><td>';
+
+    echo '<input type="datetime-local" '
+        . 'id="event_local_time" name="event_local_time" step="1" '
+        . 'value="'
+        . htmlspecialchars($eventLocalTimeInput, ENT_QUOTES, 'UTF-8')
+        . '">';
+
+    echo '<p>Use the session timezone: <strong>'
+        . htmlspecialchars($session['timezone'], ENT_QUOTES, 'UTF-8')
+        . '</strong>.</p>';
+
+    echo '<p>Session started: '
+        . htmlspecialchars(
+            resultspack_weather_format_timestamp(
+                $session['started_epoch'],
+                $session['timezone'],
+                'd/m/Y H:i:s P'
+            ),
+            ENT_QUOTES,
+            'UTF-8'
+        );
+
+    if ($session['ended_epoch'] !== null) {
+        echo '<br>Session ended: '
+            . htmlspecialchars(
+                resultspack_weather_format_timestamp(
+                    $session['ended_epoch'],
+                    $session['timezone'],
+                    'd/m/Y H:i:s P'
+                ),
+                ENT_QUOTES,
+                'UTF-8'
+            );
+    }
+
+    echo '</p></td></tr>';
 
     echo '<tr>';
     echo '<td><label for="event_action">Action</label></td>';
@@ -277,16 +374,12 @@ if ($session['ended_epoch'] === null) {
 
     echo '<tr><td colspan="2">';
     echo '<button type="submit">'
-        . 'Record decision now'
+        . 'Record decision'
         . '</button>';
     echo '</td></tr>';
 
     echo '</table>';
     echo '</form>';
-} else {
-    echo '<p>This session is completed. '
-        . 'Recording decisions at the current time is available '
-        . 'only while a session is open.</p>';
 }
 
 echo <<<'HTML'
@@ -305,6 +398,21 @@ echo <<<'HTML'
     const button = form.querySelector('button[type="submit"]');
     const progress = document.getElementById('event-save-progress');
 
+    const timeMode = document.getElementById('event_time_mode');
+    const timeInput = document.getElementById('event_local_time');
+    const timeRow = document.getElementById('event-local-time-row');
+
+    function updateTimeChoice() {
+        const specified = timeMode.value === 'specified';
+        timeRow.hidden = !specified;
+        timeInput.disabled = !specified;
+        timeInput.required = specified;
+    }
+
+    timeMode.addEventListener('change', updateTimeChoice);
+    window.addEventListener('pageshow', updateTimeChoice);
+    updateTimeChoice();
+
     form.addEventListener('submit', (event) => {
         if (form.dataset.saving === 'yes') {
             event.preventDefault();
@@ -320,7 +428,7 @@ echo <<<'HTML'
     window.addEventListener('pageshow', () => {
         delete form.dataset.saving;
         button.disabled = false;
-        button.textContent = 'Record decision now';
+        button.textContent = 'Record decision';
         progress.hidden = true;
     });
 })();

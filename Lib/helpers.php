@@ -140,29 +140,6 @@ function resultspack_weather_normalise_direction($degrees)
     return $degrees;
 }
 
-// Return the shortest signed correction from one direction to another. Example: recorded = 56, verified = 359, result = -57.
-function resultspack_weather_direction_difference($recorded, $verified)
-{
-    $recorded = resultspack_weather_normalise_direction($recorded);
-    $verified = resultspack_weather_normalise_direction($verified);
-
-    if ($recorded === null || $verified === null) {
-        return null;
-    }
-
-    $difference = $verified - $recorded;
-
-    while ($difference > 180) {
-        $difference -= 360;
-    }
-
-    while ($difference <= -180) {
-        $difference += 360;
-    }
-
-    return $difference;
-}
-
 // Apply correction to direction reference without changing raw data.
 function resultspack_weather_apply_direction_correction(
     $direction,
@@ -239,79 +216,6 @@ function resultspack_weather_direction_verification_label($value)
     );
 
     return $labels[$value] ?? 'Unverified';
-}
-
-// Validate a station offset in metres.
-function resultspack_weather_site_offset($value)
-{
-    if (
-        $value === null
-        || $value === ''
-        || !is_numeric($value)
-    ) {
-        return null;
-    }
-
-    $value = (float) $value;
-
-    if ($value < -1000 || $value > 1000) {
-        return null;
-    }
-
-    return $value;
-}
-
-// Validate the recorded ground-surface category.
-function resultspack_weather_ground_surface($value)
-{
-    $value =
-        strtolower(
-            trim((string) $value)
-        );
-
-    $allowed = array(
-        '',
-        'grass',
-        'artificial_turf',
-        'hardstanding',
-        'indoor_floor',
-        'mixed',
-        'other',
-    );
-
-    return in_array(
-        $value,
-        $allowed,
-        true
-    )
-        ? $value
-        : '';
-}
-
-// Validate the recorded site-exposure category.
-function resultspack_weather_site_exposure($value)
-{
-    $value =
-        strtolower(
-            trim((string) $value)
-        );
-
-    $allowed = array(
-        '',
-        'open',
-        'partly_sheltered',
-        'sheltered',
-        'indoor',
-        'other',
-    );
-
-    return in_array(
-        $value,
-        $allowed,
-        true
-    )
-        ? $value
-        : '';
 }
 
 // Human-readable fore/aft station position.

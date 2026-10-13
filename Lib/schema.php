@@ -42,59 +42,6 @@ function resultspack_weather_table_exists($tableName)
     return (bool) safe_fetch($result);
 }
 
-// Inspect ArcheryWeather storage without modifying it.
-function resultspack_weather_existing_storage_status()
-{
-    $tables = array(
-        'sessions' =>
-            'CustomArcheryWeatherSessions',
-
-        'observations' =>
-            'CustomArcheryWeatherObservations',
-
-        'events' =>
-            'CustomArcheryWeatherEvents',
-
-        'timing_corrections' =>
-            'CustomArcheryWeatherTimingCorrections',
-
-        'direction_corrections' =>
-            'CustomArcheryWeatherDirectionCorrections',
-    );
-
-    $status = array();
-
-    foreach ($tables as $key => $tableName) {
-        $exists =
-            resultspack_weather_table_exists(
-                $tableName
-            );
-
-        $count = null;
-
-        if ($exists) {
-            $result = safe_r_sql(
-                "SELECT COUNT(*) AS RowCount " .
-                "FROM " . $tableName
-            );
-
-            $row = safe_fetch($result);
-
-            $count = $row
-                ? (int) $row->RowCount
-                : 0;
-        }
-
-        $status[$key] = array(
-            'table' => $tableName,
-            'exists' => $exists,
-            'count' => $count,
-        );
-    }
-
-    return $status;
-}
-
 // Create Sessions table.
 function archeryweather_ensure_sessions_table($databaseName = null)
 {

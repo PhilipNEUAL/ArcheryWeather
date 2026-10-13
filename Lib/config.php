@@ -34,17 +34,6 @@ function resultspack_weather_is_configured()
     return !empty($config['personal_access_token']);
 }
 
-function resultspack_weather_config_summary()
-{
-    $config = resultspack_weather_config();
-
-    return array(
-        'configured' => resultspack_weather_is_configured(),
-        'station_id' => $config['station_id'] ?? null,
-        'device_id' => $config['device_id'] ?? null,
-    );
-}
-
 // Return the configured timezone for weather sessions.
 function resultspack_weather_timezone()
 {

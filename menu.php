@@ -1,7 +1,7 @@
 <?php
 
 if (!isset($ret['ARCHERYWEATHER'])) {
-    $ret['ARCHERYWEATHER'][] = 'ArcheryWeather';
+    $ret['ARCHERYWEATHER'][] = 'Weather';
 }
 
 $ret['ARCHERYWEATHER'][] =

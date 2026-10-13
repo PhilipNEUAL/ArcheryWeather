@@ -10,6 +10,8 @@
 
     let controller = null;
     let requestNumber = 0;
+    let checksStopped = false;
+    let refreshTimer = null;
 
     function show(message, colour) {
         output.textContent = message;
@@ -41,7 +43,7 @@
     }
 
     async function checkStatus() {
-        if (document.hidden || controller !== null) {
+        if (checksStopped || document.hidden || controller !== null) {
             return;
         }
 
@@ -63,6 +65,12 @@
         try {
             const url = new URL('StationStatus.php', window.location.href);
             url.searchParams.set('station_id', station.value);
+            if (output.dataset.sessionId) {
+                url.searchParams.set(
+                    'session_id',
+                    output.dataset.sessionId
+                );
+            }
 
             const response = await fetch(url, {
                 credentials: 'same-origin',
@@ -71,6 +79,19 @@
             });
 
             const data = await response.json();
+
+            if (data.session_closed === true) {
+                checksStopped = true;
+                window.clearInterval(refreshTimer);
+
+                show(
+                    'Session completed. Live checks have stopped. '
+                    + 'Reload to view the completed session.',
+                    '#555'
+                );
+
+                return;
+            }
 
             if (!response.ok) {
                 throw new Error(data.error || 'The station check failed.');
@@ -159,6 +180,6 @@
     station.addEventListener('change', restartCheck);
     document.addEventListener('visibilitychange', restartCheck);
 
-    window.setInterval(checkStatus, 60000);
+    refreshTimer = window.setInterval(checkStatus, 60000);
     checkStatus();
 })();

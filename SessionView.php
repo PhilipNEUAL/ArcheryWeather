@@ -189,6 +189,24 @@ echo '</a>';
 echo '</td>';
 echo '</tr>';
 
+if ($session['ended_epoch'] === null) {
+    echo '<tr>';
+    echo '<td class="Bold">Live station status</td>';
+    echo '<td>';
+
+    echo '<input type="hidden" id="station_id" value="'
+        . (int) $session['station_id']
+        . '">';
+
+    echo '<div id="station-status" role="status" aria-live="polite" '
+        . 'data-session-id="' . (int) $session['id'] . '">'
+        . 'Checking the latest station observation…'
+        . '</div>';
+
+    echo '</td>';
+    echo '</tr>';
+}
+
 $effectiveShootingBearing =
     resultspack_weather_effective_shooting_bearing(
         $session
@@ -324,6 +342,10 @@ foreach ($environmentGraphs as $graph) {
 
 echo '</details>';
 
-echo '<script src="Js/graph_download.js" defer></script>';
+echo '<script src="js/station_status.js?v=session-status-1" defer></script>';
+
+if ($session['ended_epoch'] === null) {
+    echo '<script src="js/station_status.js?v=session-status-1" defer></script>';
+}
 
 include('Common/Templates/tail.php');

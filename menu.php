@@ -5,26 +5,21 @@ if (!isset($ret['ARCHERYWEATHER'])) {
 }
 
 $ret['ARCHERYWEATHER'][] =
-    'New session|'
+    'New|'
     . $CFG->ROOT_DIR
     . 'Modules/Custom/ArcheryWeather/NewSession.php';
 
 $ret['ARCHERYWEATHER'][] =
-    'View sessions|'
+    'View|'
     . $CFG->ROOT_DIR
     . 'Modules/Custom/ArcheryWeather/Sessions.php';
 
-/* $ret['ARCHERYWEATHER'][] =
-    'Diagnostics|'
-    . $CFG->ROOT_DIR
-    . 'Modules/Custom/ArcheryWeather/index.php'; */
-
 $ret['ARCHERYWEATHER'][] =
-    'Import / Export|'
+    'Import|'
     . $CFG->ROOT_DIR
     . 'Modules/Custom/ArcheryWeather/WeatherTransfer.php';
 
 $ret['ARCHERYWEATHER'][] =
-    'Session cleanup|'
+    'Delete|'
     . $CFG->ROOT_DIR
     . 'Modules/Custom/ArcheryWeather/SessionCleanup.php';
